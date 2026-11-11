@@ -10,9 +10,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DetallePedido, EstadoPedido, ESTADOS_COLOR, ESTADOS_LABEL } from "@/types";
 
 export default function PedidosPage() {
-  const { productos, pedidos, addPedido, updatePedido, deletePedido } = useStore();
+  const { productos, pedidos, mesas, addPedido, updatePedido, deletePedido, ocuparMesa, addTicketCocina } = useStore();
   const { user } = useAuth();
-  const [mesa, setMesa] = useState("");
+  const [mesa, setMesa] = useState("1");
   const [notas, setNotas] = useState("");
   const [carrito, setCarrito] = useState<DetallePedido[]>([]);
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
@@ -36,10 +36,13 @@ export default function PedidosPage() {
   const handleCrear = () => {
     if (!mesa || carrito.length === 0) return alert("Mesa y al menos 1 producto");
     const total = calcTotal(carrito);
+    const mesaObj = mesas.find((m) => m.numero === mesa);
+    const ticketId = uid("TK-");
+    const pedidoId = uid("PED-");
     const nuevo = {
-      id: uid("PED-"),
+      id: pedidoId,
       mesa,
-      mesaId: null,
+      mesaId: mesaObj?.id || null,
       items: carrito,
       estado: "pendiente" as EstadoPedido,
       total,
@@ -47,12 +50,25 @@ export default function PedidosPage() {
       medioPago: null,
       creadoPor: user?.id || "u2",
       esQr: false,
-      ticketCocinaId: null,
+      ticketCocinaId: ticketId,
       facturaId: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    const ticket = {
+      id: ticketId,
+      pedidoId,
+      mesaId: mesaObj?.id || "",
+      numeroMesa: mesa,
+      items: carrito,
+      notas,
+      impresoEn: null,
+      reimpresiones: 0,
+      createdAt: new Date().toISOString(),
+    };
     addPedido(nuevo);
+    addTicketCocina(ticket);
+    if (mesaObj) ocuparMesa(mesaObj.id, pedidoId);
     setCarrito([]);
     setMesa("");
     setNotas("");
@@ -123,7 +139,14 @@ export default function PedidosPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Mesa *</Label>
-                <Input placeholder="Ej: 3 / Barra / Domicilio" value={mesa} onChange={(e) => setMesa(e.target.value)} />
+                <Select value={mesa} onChange={(e) => setMesa(e.target.value)}>
+                  {mesas.map((m) => (
+                    <option key={m.id} value={m.numero}>
+                      Mesa {m.numero} — {m.estado} ({m.pedidoActivoIds.length} pedidos)
+                    </option>
+                  ))}
+                </Select>
+                <p className="text-[11px] text-zinc-400 mt-1">Multiples pedidos por mesa permitidos — QR / mesero</p>
               </div>
               <div className="flex flex-col justify-end">
                 <p className="text-xs text-zinc-500">Items</p>
