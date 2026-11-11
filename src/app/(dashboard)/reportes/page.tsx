@@ -81,8 +81,8 @@ export default function ReportesPage() {
           <CardHeader className="flex flex-row justify-between items-center">
             <p className="font-bold">Cierre {filtro} — {filtrados.length} pedidos</p>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={exportCSV}>📥 CSV</Button>
-              <Button size="sm" variant="outline" onClick={handlePrint}>🖨️ PDF</Button>
+              <Button size="sm" variant="outline" onClick={exportCSV}>CSV</Button>
+              <Button size="sm" variant="outline" onClick={handlePrint}>PDF</Button>
             </div>
           </CardHeader>
           <CardContent>

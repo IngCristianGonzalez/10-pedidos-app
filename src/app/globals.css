@@ -3,22 +3,67 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --background: #fbfbfd;
+  --foreground: #1d1d1f;
   --brand-orange: #ff6b00;
   --brand-black: #0a0a0a;
+}
+
+html {
+  font: 100%/1.5 system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+}
+
+/* Apple typography - tracking/leading size-specific */
+h1, h2 {
+  letter-spacing: -0.022em;
+  line-height: 1.05;
+  font-optical-sizing: auto;
+}
+h1 { font-weight: 700; }
+p, li { line-height: 1.5; }
+
+/* Materials - translucent depth */
+.material {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+}
+.material-dark {
+  background: rgba(29, 29, 31, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Apple feedback - instant press */
+:active {
+  -webkit-tap-highlight-color: transparent;
 }
 
 @media print {
   .no-print {
     display: none !important;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .material, .material-dark { backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 
 @layer utilities {

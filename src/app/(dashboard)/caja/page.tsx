@@ -70,7 +70,7 @@ export default function CajaPage() {
             <p className="text-xs text-zinc-500">Click para seleccionar y cobrar</p>
           </CardHeader>
           <CardContent className="space-y-2 max-h-[520px] overflow-auto">
-            {filtrados.length === 0 && <p className="text-sm text-zinc-400 text-center py-8 border-2 border-dashed rounded-xl">Todo cobrado 🎉</p>}
+            {filtrados.length === 0 && <p className="text-sm text-zinc-400 text-center py-8 border-2 border-dashed rounded-2xl">Todo cobrado</p>}
             {filtrados.map((p) => (
               <button
                 key={p.id}
@@ -111,7 +111,7 @@ export default function CajaPage() {
                   <div className="border-t pt-2 flex justify-between font-black text-lg">
                     <span>Total</span><span className="text-[#FF6B00]">{formatCOP(selected.total)}</span>
                   </div>
-                  {selected.notas && <p className="text-xs bg-yellow-50 border border-yellow-200 rounded-lg p-2 mt-2">📝 {selected.notas}</p>}
+                  {selected.notas && <p className="text-xs bg-amber-50 border border-amber-200 rounded-xl p-2.5 mt-2 tracking-tight">Notas: {selected.notas}</p>}
                 </div>
 
                 <div>
@@ -142,7 +142,7 @@ export default function CajaPage() {
 
                 <div className="flex gap-2">
                   <Button className="flex-1" size="lg" onClick={handleCobrar}>Cobrar {formatCOP(selected.total)}</Button>
-                  <Button variant="outline" onClick={handlePrint}>🖨️ Ticket</Button>
+                  <Button variant="outline" onClick={handlePrint}>Ticket</Button>
                 </div>
                 <Button variant="ghost" className="w-full" onClick={() => setSelectedId(null)}>Cancelar</Button>
               </>
@@ -174,7 +174,7 @@ export default function CajaPage() {
             {medio === "efectivo" && <><div className="flex justify-between text-xs"><span>Recibido</span><span>{formatCOP(efectivoRecibido)}</span></div><div className="flex justify-between text-xs font-bold"><span>Cambio</span><span>{formatCOP(cambio)}</span></div></>}
             {selected.notas && <p className="text-xs mt-2">Notas: {selected.notas}</p>}
           </div>
-          <p className="text-center text-xs text-zinc-400 mt-4 border-t border-dashed pt-3">¡Gracias por tu compra! 🍟</p>
+          <p className="text-center text-xs tracking-wide text-zinc-400 mt-4 border-t border-dashed pt-3">Gracias por tu compra</p>
           <p className="text-center text-[10px] text-zinc-400">Impresión navegador — luego térmica 80mm</p>
         </div>
       )}
