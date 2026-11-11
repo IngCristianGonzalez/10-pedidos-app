@@ -4,11 +4,14 @@ import { useStore } from "@/lib/store";
 import { formatCOP, formatDate } from "@/lib/utils";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { FacturaPrint } from "@/components/print/factura";
+import { printElement } from "@/lib/print";
 
 
 export default function ReportesPage() {
-  const { pedidos } = useStore();
+  const { pedidos, facturas } = useStore();
   const [filtro, setFiltro] = useState<"hoy" | "semana" | "mes" | "todos">("hoy");
+  const [facturaSel, setFacturaSel] = useState<string | null>(null);
 
   const filtrados = useMemo(() => {
     const now = new Date();
@@ -44,6 +47,19 @@ export default function ReportesPage() {
     return Array.from(map.values()).sort((a, b) => b.qty - a.qty).slice(0, 5);
   }, [pagados]);
 
+  const facturasFiltradas = useMemo(() => {
+    const now = new Date();
+    return facturas.filter((f) => {
+      if (filtro === "todos") return true;
+      const d = new Date(f.createdAt);
+      if (filtro === "hoy") return d.toDateString() === now.toDateString();
+      if (filtro === "semana") return (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24) <= 7;
+      if (filtro === "mes") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      return true;
+    });
+  }, [facturas, filtro]);
+  const totalFacturas = facturasFiltradas.reduce((a, f) => a + f.total, 0);
+
   const exportCSV = () => {
     const header = "ID,Mesa,Estado,Total,MedioPago,Fecha,Items\n";
     const rows = filtrados.map((p) => `${p.id},${p.mesa},${p.estado},${p.total},${p.medioPago || ""},${p.createdAt},"${p.items.map((i) => `${i.cantidad}x${i.nombre}`).join(" | ")}"`).join("\n");
@@ -52,6 +68,17 @@ export default function ReportesPage() {
     const a = document.createElement("a");
     a.href = url;
     a.download = `gigi-reporte-${filtro}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  const exportCSVFacturas = () => {
+    const header = "Consecutivo,Pedido,Mesa,Total,MedioPago,Fecha\n";
+    const rows = facturasFiltradas.map((f) => `${f.consecutivo},${f.pedidoId},${f.numeroMesa},${f.total},${f.medioPago},${f.createdAt}`).join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `gigi-facturas-${filtro}-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -70,10 +97,10 @@ export default function ReportesPage() {
       </div>
 
       <div className="grid md:grid-cols-4 gap-3">
-        <Card><CardContent className="pt-6"><p className="text-xs text-zinc-500">Ventas {filtro}</p><p className="text-xl font-black">{formatCOP(ventas)}</p><p className="text-xs text-zinc-400">{pagados.length} pedidos pagados</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-xs text-zinc-500">Efectivo</p><p className="text-xl font-black">{formatCOP(efectivo)}</p><p className="text-xs text-zinc-400">{pagados.filter((p) => p.medioPago === "efectivo").length} pagos</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-xs text-zinc-500">Transferencia</p><p className="text-xl font-black">{formatCOP(transferencia)}</p><p className="text-xs text-zinc-400">{pagados.filter((p) => p.medioPago === "transferencia").length} pagos</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-xs text-zinc-500">Ticket promedio</p><p className="text-xl font-black">{formatCOP(ticketPromedio)}</p><p className="text-xs text-zinc-400">Por pedido pagado</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-xs text-zinc-500">Ventas {filtro}</p><p className="text-xl font-semibold tabular-nums">{formatCOP(ventas)}</p><p className="text-xs text-zinc-400">{pagados.length} pedidos pagados</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-xs text-zinc-500">Efectivo</p><p className="text-xl font-semibold tabular-nums">{formatCOP(efectivo)}</p><p className="text-xs text-zinc-400">{pagados.filter((p) => p.medioPago === "efectivo").length} pagos</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-xs text-zinc-500">Transferencia</p><p className="text-xl font-semibold tabular-nums">{formatCOP(transferencia)}</p><p className="text-xs text-zinc-400">{pagados.filter((p) => p.medioPago === "transferencia").length} pagos</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-xs text-zinc-500">Facturas {filtro}</p><p className="text-xl font-semibold tabular-nums">{facturasFiltradas.length} • {formatCOP(totalFacturas)}</p><p className="text-xs text-zinc-400">Ticket promedio {formatCOP(ticketPromedio)}</p></CardContent></Card>
       </div>
 
       <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-4">
@@ -127,16 +154,34 @@ export default function ReportesPage() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader><p className="font-semibold tracking-tight">Facturas {filtro} — {facturasFiltradas.length}</p><div className="flex gap-1"><Button size="sm" variant="outline" onClick={exportCSVFacturas}>CSV Facturas</Button></div></CardHeader>
+            <CardContent className="space-y-2 max-h-[320px] overflow-auto">
+              {facturasFiltradas.length === 0 && <p className="text-sm text-zinc-400 text-center py-4">Sin facturas — cobra en caja para generar</p>}
+              {facturasFiltradas.map((f) => (
+                <div key={f.id} className="flex justify-between items-center bg-zinc-50 rounded-xl p-2.5 border">
+                  <div>
+                    <p className="font-medium text-sm tracking-tight">{f.consecutivo} — Mesa {f.numeroMesa} • {f.pedidoId}</p>
+                    <p className="text-xs text-zinc-500">{formatDate(f.createdAt)} — {f.medioPago} — {formatCOP(f.total)}</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => { setFacturaSel(f.id); setTimeout(() => printElement("print-factura"), 100); }}>Reimprimir</Button>
+                </div>
+              ))}
+              {facturaSel && facturas.find((f) => f.id === facturaSel) && <div className="hidden"><FacturaPrint factura={facturas.find((f) => f.id === facturaSel)!} /></div>}
+            </CardContent>
+          </Card>
+
           <Card className="border-[#FF6B00]/30 bg-orange-50">
             <CardContent className="pt-4">
-              <p className="font-bold text-sm">Resumen cierre</p>
+              <p className="font-semibold text-sm tracking-tight">Resumen cierre — IVA incluido</p>
               <div className="text-sm mt-2 space-y-1">
-                <div className="flex justify-between"><span>Ventas brutas</span><span className="font-bold">{formatCOP(ventas)}</span></div>
-                <div className="flex justify-between"><span>Efectivo</span><span>{formatCOP(efectivo)}</span></div>
-                <div className="flex justify-between"><span>Transferencia</span><span>{formatCOP(transferencia)}</span></div>
-                <div className="border-t pt-2 flex justify-between font-black text-base"><span>Neto caja</span><span>{formatCOP(ventas)}</span></div>
+                <div className="flex justify-between"><span>Ventas brutas</span><span className="font-semibold tabular-nums">{formatCOP(ventas)}</span></div>
+                <div className="flex justify-between"><span>Efectivo</span><span className="tabular-nums">{formatCOP(efectivo)}</span></div>
+                <div className="flex justify-between"><span>Transferencia</span><span className="tabular-nums">{formatCOP(transferencia)}</span></div>
+                <div className="border-t pt-2 flex justify-between font-semibold text-base"><span>Neto caja</span><span className="tabular-nums">{formatCOP(ventas)}</span></div>
+                <div className="flex justify-between text-xs text-zinc-500"><span>Facturas</span><span>{facturasFiltradas.length} — {formatCOP(totalFacturas)}</span></div>
               </div>
-              <p className="text-xs text-zinc-500 mt-2">MVP local — luego export Excel/PDF real y Supabase. Usa CSV para contabilidad.</p>
+              <p className="text-xs text-zinc-500 mt-2">80mm solo caja — ticket cocina y factura imprimibles — IVA incluido.</p>
             </CardContent>
           </Card>
         </div>
