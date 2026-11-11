@@ -40,12 +40,16 @@ export async function POST(req: Request) {
     const nuevo = {
       id: `PED-${Math.random().toString(36).slice(2, 6).toUpperCase()}${Date.now().toString(36).toUpperCase().slice(-3)}`,
       mesa: parsed.mesa,
+      mesaId: null,
       items: parsed.items,
       estado: "pendiente" as const,
       total,
       notas: parsed.notas || "",
       medioPago: null,
       creadoPor: parsed.creadoPor || "api",
+      esQr: false,
+      ticketCocinaId: null,
+      facturaId: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

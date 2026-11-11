@@ -1,4 +1,4 @@
-import { Producto, Pedido } from "@/types";
+import { Producto, Pedido, Mesa } from "@/types";
 
 export const PRODUCTOS_MOCK: Producto[] = [
   {
@@ -83,10 +83,17 @@ export const PRODUCTOS_MOCK: Producto[] = [
   },
 ];
 
+export const MESAS_MOCK: Mesa[] = [
+  { id: "m1", numero: "1", estado: "disponible", capacidad: 4, pedidoActivoIds: [], updatedAt: new Date().toISOString() },
+  { id: "m2", numero: "2", estado: "disponible", capacidad: 4, pedidoActivoIds: [], updatedAt: new Date().toISOString() },
+  { id: "m3", numero: "3", estado: "ocupada", capacidad: 6, pedidoActivoIds: ["PED-001"], updatedAt: new Date().toISOString() },
+];
+
 export const PEDIDOS_MOCK: Pedido[] = [
   {
     id: "PED-001",
     mesa: "3",
+    mesaId: "m3",
     items: [
       { productoId: "p1", nombre: "Papas Gigi Clásicas", precio: 12000, cantidad: 1, subtotal: 12000 },
       { productoId: "p6", nombre: "Gaseosa 400ml", precio: 4000, cantidad: 2, subtotal: 8000 },
@@ -96,12 +103,16 @@ export const PEDIDOS_MOCK: Pedido[] = [
     notas: "Sin picante",
     medioPago: null,
     creadoPor: "u2",
+    esQr: false,
+    ticketCocinaId: null,
+    facturaId: null,
     createdAt: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
     updatedAt: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
   },
   {
     id: "PED-002",
-    mesa: "5",
+    mesa: "2",
+    mesaId: "m2",
     items: [
       { productoId: "p3", nombre: "Hamburguesa Gigi Doble", precio: 25000, cantidad: 1, subtotal: 25000 },
     ],
@@ -110,6 +121,9 @@ export const PEDIDOS_MOCK: Pedido[] = [
     notas: "Punto medio",
     medioPago: null,
     creadoPor: "u2",
+    esQr: true,
+    ticketCocinaId: null,
+    facturaId: null,
     createdAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
     updatedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
   },

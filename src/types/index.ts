@@ -32,15 +32,57 @@ export type DetallePedido = {
   subtotal: number;
 };
 
+export type EstadoMesa = "disponible" | "ocupada" | "reservada";
+
+export type Mesa = {
+  id: string;
+  numero: string; // "1","2","3"
+  estado: EstadoMesa;
+  capacidad: number;
+  pedidoActivoIds: string[];
+  updatedAt: string;
+};
+
+export type TicketCocina = {
+  id: string;
+  pedidoId: string;
+  mesaId: string;
+  numeroMesa: string;
+  items: DetallePedido[];
+  notas: string;
+  impresoEn: string | null;
+  reimpresiones: number;
+  createdAt: string;
+};
+
+export type Factura = {
+  id: string;
+  consecutivo: string; // FAC-000001
+  pedidoId: string;
+  mesaId: string;
+  numeroMesa: string;
+  items: DetallePedido[];
+  subtotal: number;
+  ivaIncluido: number;
+  total: number;
+  medioPago: MedioPago;
+  createdAt: string;
+  impreso: boolean;
+};
+
 export type Pedido = {
   id: string;
   mesa: string;
+  mesaId: string | null;
   items: DetallePedido[];
   estado: EstadoPedido;
   total: number;
   notas: string;
   medioPago: MedioPago;
   creadoPor: string; // usuario id
+  esQr: boolean;
+  ticketCocinaId: string | null;
+  facturaId: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -59,6 +101,18 @@ export const ESTADOS_LABEL: Record<EstadoPedido, string> = {
   entregado: "Entregado",
   pagado: "Pagado",
   cancelado: "Cancelado",
+};
+
+export const ESTADOS_MESA_LABEL: Record<EstadoMesa, string> = {
+  disponible: "Disponible",
+  ocupada: "Ocupada",
+  reservada: "Reservada",
+};
+
+export const ESTADOS_MESA_COLOR: Record<EstadoMesa, string> = {
+  disponible: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  ocupada: "bg-orange-50 text-orange-700 border-orange-200",
+  reservada: "bg-zinc-100 text-zinc-600 border-zinc-200",
 };
 
 export const ESTADOS_COLOR: Record<EstadoPedido, string> = {

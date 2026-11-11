@@ -39,12 +39,16 @@ export default function PedidosPage() {
     const nuevo = {
       id: uid("PED-"),
       mesa,
+      mesaId: null,
       items: carrito,
       estado: "pendiente" as EstadoPedido,
       total,
       notas,
       medioPago: null,
       creadoPor: user?.id || "u2",
+      esQr: false,
+      ticketCocinaId: null,
+      facturaId: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

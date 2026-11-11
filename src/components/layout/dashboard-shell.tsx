@@ -7,6 +7,7 @@ import { Rol } from "@/types";
 import { useState } from "react";
 
 const NAV: { href: string; label: string; roles: Rol[] }[] = [
+  { href: "/mesas", label: "Mesas", roles: ["admin", "mesero"] },
   { href: "/pedidos", label: "Pedidos", roles: ["admin", "mesero"] },
   { href: "/cocina", label: "Cocina", roles: ["admin", "cocina"] },
   { href: "/caja", label: "Caja", roles: ["admin", "caja"] },
