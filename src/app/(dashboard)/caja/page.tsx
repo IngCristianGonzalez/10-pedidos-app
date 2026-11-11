@@ -8,14 +8,16 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ESTADOS_COLOR, ESTADOS_LABEL, MedioPago } from "@/types";
 import { TicketCocinaPrint } from "@/components/print/ticket-cocina";
+import { FacturaPrint } from "@/components/print/factura";
 import { printElement } from "@/lib/print";
 
 export default function CajaPage() {
-  const { pedidos, updatePedido, ticketsCocina, updateTicketCocina } = useStore();
+  const { pedidos, updatePedido, ticketsCocina, updateTicketCocina, facturas, addFactura, liberarMesaSiVacia } = useStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [medio, setMedio] = useState<MedioPago>("efectivo");
   const [efectivoRecibido, setEfectivoRecibido] = useState<number>(0);
   const [ticketCocinaId, setTicketCocinaId] = useState<string | null>(null);
+  const [ultimaFacturaId, setUltimaFacturaId] = useState<string | null>(null);
   const ticketRef = useRef<HTMLDivElement>(null);
 
   const filtrados = pedidos.filter((p) => !["pagado", "cancelado"].includes(p.estado));
@@ -27,14 +29,36 @@ export default function CajaPage() {
   const handleCobrar = () => {
     if (!selected) return;
     if (medio === "efectivo" && efectivoRecibido < selected.total) return alert("Efectivo insuficiente");
-    updatePedido(selected.id, { estado: "pagado", medioPago: medio });
+    const consecutivo = `FAC-${String(facturas.length + 1).padStart(6, "0")}`;
+    const subtotal = Math.round(selected.total / 1.19);
+    const ivaIncluido = selected.total - subtotal;
+    const facturaId = `FACID-${Date.now()}`;
+    const factura = {
+      id: facturaId,
+      consecutivo,
+      pedidoId: selected.id,
+      mesaId: selected.mesaId || "",
+      numeroMesa: selected.mesa,
+      items: selected.items,
+      subtotal,
+      ivaIncluido,
+      total: selected.total,
+      medioPago: medio,
+      createdAt: new Date().toISOString(),
+      impreso: false,
+    };
+    addFactura(factura);
+    updatePedido(selected.id, { estado: "pagado", medioPago: medio, facturaId });
+    if (selected.mesaId) liberarMesaSiVacia(selected.mesaId, selected.id);
+    setUltimaFacturaId(facturaId);
     setSelectedId(null);
     setEfectivoRecibido(0);
+    setTimeout(() => printElement("print-factura"), 200);
   };
 
   const handlePrint = () => {
-    if (!selected) return;
-    printElement("print-factura");
+    if (ultimaFacturaId) printElement("print-factura");
+    else if (selected) printElement("print-factura");
   };
   const handlePrintCocina = (ticketId: string) => {
     setTicketCocinaId(ticketId);
@@ -196,14 +220,29 @@ export default function CajaPage() {
         </div>
       )}
 
-      {/* Factura / Ticket cliente imprimible */}
-      {selected && (
-        <div id="print-factura" ref={ticketRef} className="bg-white border rounded-xl p-6 max-w-[360px] mx-auto">
+      {/* Factura imprimible - solo caja */}
+      {ultimaFacturaId ? (
+        (() => {
+          const fac = facturas.find((f) => f.id === ultimaFacturaId);
+          if (!fac) return null;
+          return (
+            <div className="space-y-2">
+              <p className="text-sm font-medium tracking-tight">Ultima factura {fac.consecutivo} generada — Mesa {fac.numeroMesa}</p>
+              <FacturaPrint factura={fac} />
+              <div className="flex gap-2 no-print">
+                <Button size="sm" variant="outline" onClick={() => printElement("print-factura")}>Reimprimir factura</Button>
+                <Button size="sm" variant="ghost" onClick={() => setUltimaFacturaId(null)}>Cerrar</Button>
+              </div>
+            </div>
+          );
+        })()
+      ) : selected ? (
+        <div id="print-factura-preview" ref={ticketRef} className="bg-white border rounded-xl p-6 max-w-[360px] mx-auto">
           <div className="text-center border-b border-dashed pb-3 mb-3">
             <p className="font-bold text-lg tracking-tight text-[#FF6B00]">GIGI PAPAS</p>
             <p className="text-xs tracking-widest">COMIDAS RAPIDAS</p>
-            <p className="text-xs text-zinc-500">Cliente Duvan Basanta — NIT consult por definir</p>
-            <p className="text-xs">Factura: {selected.id} • Mesa {selected.mesa}</p>
+            <p className="text-xs text-zinc-500">Preview factura — genera al cobrar</p>
+            <p className="text-xs">Pedido: {selected.id} • Mesa {selected.mesa}</p>
             <p className="text-xs text-zinc-400">{formatDate(selected.createdAt)}</p>
           </div>
           <div className="space-y-1 text-sm">
@@ -214,16 +253,12 @@ export default function CajaPage() {
             ))}
           </div>
           <div className="border-t border-dashed mt-3 pt-3 space-y-1 text-sm">
-            <div className="flex justify-between text-xs"><span>Subtotal IVA incluido</span><span className="tabular-nums">{formatCOP(selected.total)}</span></div>
-            <div className="flex justify-between font-semibold text-base"><span>TOTAL</span><span className="tabular-nums">{formatCOP(selected.total)}</span></div>
+            <div className="flex justify-between font-semibold text-base"><span>TOTAL IVA incluido</span><span className="tabular-nums">{formatCOP(selected.total)}</span></div>
             <div className="flex justify-between text-xs"><span>Medio</span><span className="capitalize">{medio}</span></div>
-            {medio === "efectivo" && <><div className="flex justify-between text-xs"><span>Recibido</span><span className="tabular-nums">{formatCOP(efectivoRecibido)}</span></div><div className="flex justify-between text-xs font-semibold"><span>Cambio</span><span className="tabular-nums">{formatCOP(cambio)}</span></div></>}
             {selected.notas && <p className="text-xs mt-2">Notas: {selected.notas}</p>}
           </div>
-          <p className="text-center text-xs tracking-wide text-zinc-400 mt-4 border-t border-dashed pt-3">Gracias por tu compra — IVA incluido</p>
-          <p className="text-center text-[10px] text-zinc-400">80mm — impresion solo en caja</p>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
