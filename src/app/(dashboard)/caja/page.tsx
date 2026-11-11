@@ -7,17 +7,22 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ESTADOS_COLOR, ESTADOS_LABEL, MedioPago } from "@/types";
+import { TicketCocinaPrint } from "@/components/print/ticket-cocina";
+import { printElement } from "@/lib/print";
 
 export default function CajaPage() {
-  const { pedidos, updatePedido } = useStore();
+  const { pedidos, updatePedido, ticketsCocina, updateTicketCocina } = useStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [medio, setMedio] = useState<MedioPago>("efectivo");
   const [efectivoRecibido, setEfectivoRecibido] = useState<number>(0);
+  const [ticketCocinaId, setTicketCocinaId] = useState<string | null>(null);
   const ticketRef = useRef<HTMLDivElement>(null);
 
   const filtrados = pedidos.filter((p) => !["pagado", "cancelado"].includes(p.estado));
   const totalPendiente = filtrados.reduce((a, p) => a + p.total, 0);
   const selected = pedidos.find((p) => p.id === selectedId) || null;
+  const selectedTicketCocina = ticketsCocina.find((t) => t.pedidoId === selectedId) || ticketsCocina.find((t) => t.id === ticketCocinaId) || null;
+  const ticketsPendientes = ticketsCocina.filter((t) => !t.impresoEn);
 
   const handleCobrar = () => {
     if (!selected) return;
@@ -29,7 +34,15 @@ export default function CajaPage() {
 
   const handlePrint = () => {
     if (!selected) return;
-    window.print();
+    printElement("print-factura");
+  };
+  const handlePrintCocina = (ticketId: string) => {
+    setTicketCocinaId(ticketId);
+    setTimeout(() => {
+      printElement("print-cocina");
+      const t = ticketsCocina.find((x) => x.id === ticketId);
+      if (t) updateTicketCocina(ticketId, { impresoEn: new Date().toISOString(), reimpresiones: t.impresoEn ? t.reimpresiones + 1 : 0 });
+    }, 100);
   };
 
   const cambio = selected && medio === "efectivo" ? Math.max(0, efectivoRecibido - selected.total) : 0;
@@ -48,19 +61,36 @@ export default function CajaPage() {
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-zinc-500">Medios habilitados</p>
-            <p className="font-bold">Efectivo + Transferencia</p>
-            <p className="text-xs text-zinc-400">Mixto deshabilitado en MVP</p>
+            <p className="text-sm text-zinc-500">Tickets cocina por imprimir</p>
+            <p className="text-xl font-semibold">{ticketsPendientes.length} pendientes</p>
+            <p className="text-xs text-zinc-400">Solo en caja — se lleva a cocina</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-zinc-500">Ticket</p>
-            <p className="font-bold">Impresión navegador 80mm</p>
-            <p className="text-xs text-zinc-400">Ctrl+P / window.print()</p>
+            <p className="text-sm text-zinc-500">Factura</p>
+            <p className="font-bold">80mm navegador</p>
+            <p className="text-xs text-zinc-400">IVA incluido • window.print</p>
           </CardContent>
         </Card>
       </div>
+
+      {ticketsPendientes.length > 0 && (
+        <Card className="border-orange-200 bg-orange-50/50">
+          <CardHeader><p className="font-semibold tracking-tight">Tickets cocina — imprimir en caja y llevar a cocina ({ticketsPendientes.length})</p><p className="text-xs text-zinc-500">Ticket completo por pedido — cocina sin impresora</p></CardHeader>
+          <CardContent className="space-y-2">
+            {ticketsPendientes.map((t) => (
+              <div key={t.id} className="flex justify-between items-center bg-white border rounded-xl p-3">
+                <div>
+                  <p className="font-medium text-sm">Mesa {t.numeroMesa} — {t.pedidoId}</p>
+                  <p className="text-xs text-zinc-500">{t.items.map((i) => `${i.cantidad}x ${i.nombre}`).join(" • ")} • {formatDate(t.createdAt)}</p>
+                </div>
+                <Button size="sm" onClick={() => handlePrintCocina(t.id)}>Imprimir cocina</Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-6">
         {/* Lista */}
@@ -151,35 +181,49 @@ export default function CajaPage() {
         </Card>
       </div>
 
-      {/* Ticket imprimible */}
+      {/* Ticket cocina printable (solo caja) */}
+      <div className="hidden print:block">
+        {ticketsCocina.map((t) => (
+          <div key={t.id} className={ticketCocinaId === t.id ? "block" : "hidden"}>
+            <TicketCocinaPrint ticket={t} />
+          </div>
+        ))}
+      </div>
+      {selectedTicketCocina && (
+        <div className="no-print bg-amber-50 border border-amber-200 rounded-xl p-3 flex justify-between items-center">
+          <p className="text-sm">Ticket cocina para {selectedTicketCocina.pedidoId} — Mesa {selectedTicketCocina.numeroMesa} {selectedTicketCocina.impresoEn ? `impreso ${formatDate(selectedTicketCocina.impresoEn)}` : "pendiente"}</p>
+          <Button size="sm" variant="outline" onClick={() => handlePrintCocina(selectedTicketCocina.id)}>{selectedTicketCocina.impresoEn ? "Reimprimir cocina" : "Imprimir cocina"}</Button>
+        </div>
+      )}
+
+      {/* Factura / Ticket cliente imprimible */}
       {selected && (
-        <div ref={ticketRef} className="bg-white border rounded-xl p-6 max-w-[360px] mx-auto print:shadow-none print:border-none">
+        <div id="print-factura" ref={ticketRef} className="bg-white border rounded-xl p-6 max-w-[360px] mx-auto">
           <div className="text-center border-b border-dashed pb-3 mb-3">
-            <p className="font-black text-lg text-[#FF6B00]">GIGI PAPAS</p>
-            <p className="text-xs tracking-widest">COMIDAS RÁPIDAS</p>
-            <p className="text-xs text-zinc-500">Cliente Duvan Basanta</p>
-            <p className="text-xs">Ticket: {selected.id} • Mesa {selected.mesa}</p>
+            <p className="font-bold text-lg tracking-tight text-[#FF6B00]">GIGI PAPAS</p>
+            <p className="text-xs tracking-widest">COMIDAS RAPIDAS</p>
+            <p className="text-xs text-zinc-500">Cliente Duvan Basanta — NIT consult por definir</p>
+            <p className="text-xs">Factura: {selected.id} • Mesa {selected.mesa}</p>
             <p className="text-xs text-zinc-400">{formatDate(selected.createdAt)}</p>
           </div>
           <div className="space-y-1 text-sm">
             {selected.items.map((i) => (
               <div key={i.productoId} className="flex justify-between">
-                <span>{i.cantidad}x {i.nombre}</span><span>{formatCOP(i.subtotal)}</span>
+                <span>{i.cantidad}x {i.nombre}</span><span className="tabular-nums">{formatCOP(i.subtotal)}</span>
               </div>
             ))}
           </div>
           <div className="border-t border-dashed mt-3 pt-3 space-y-1 text-sm">
-            <div className="flex justify-between font-black text-base"><span>TOTAL</span><span>{formatCOP(selected.total)}</span></div>
+            <div className="flex justify-between text-xs"><span>Subtotal IVA incluido</span><span className="tabular-nums">{formatCOP(selected.total)}</span></div>
+            <div className="flex justify-between font-semibold text-base"><span>TOTAL</span><span className="tabular-nums">{formatCOP(selected.total)}</span></div>
             <div className="flex justify-between text-xs"><span>Medio</span><span className="capitalize">{medio}</span></div>
-            {medio === "efectivo" && <><div className="flex justify-between text-xs"><span>Recibido</span><span>{formatCOP(efectivoRecibido)}</span></div><div className="flex justify-between text-xs font-bold"><span>Cambio</span><span>{formatCOP(cambio)}</span></div></>}
+            {medio === "efectivo" && <><div className="flex justify-between text-xs"><span>Recibido</span><span className="tabular-nums">{formatCOP(efectivoRecibido)}</span></div><div className="flex justify-between text-xs font-semibold"><span>Cambio</span><span className="tabular-nums">{formatCOP(cambio)}</span></div></>}
             {selected.notas && <p className="text-xs mt-2">Notas: {selected.notas}</p>}
           </div>
-          <p className="text-center text-xs tracking-wide text-zinc-400 mt-4 border-t border-dashed pt-3">Gracias por tu compra</p>
-          <p className="text-center text-[10px] text-zinc-400">Impresión navegador — luego térmica 80mm</p>
+          <p className="text-center text-xs tracking-wide text-zinc-400 mt-4 border-t border-dashed pt-3">Gracias por tu compra — IVA incluido</p>
+          <p className="text-center text-[10px] text-zinc-400">80mm — impresion solo en caja</p>
         </div>
       )}
-
-      <style>{`@media print { body * { visibility: hidden; } div:has(> div) { visibility: visible; } }`}</style>
     </div>
   );
 }
