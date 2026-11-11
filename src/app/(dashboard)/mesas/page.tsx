@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ESTADOS_MESA_COLOR, ESTADOS_MESA_LABEL, Mesa } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { QRCodeSVG } from "qrcode.react";
 
 export default function MesasPage() {
   const { mesas, updateMesa, pedidos } = useStore();
@@ -54,11 +55,14 @@ export default function MesasPage() {
                 )}
                 {m.pedidoActivoIds.length === 0 && <p className="text-xs text-zinc-400 bg-white border border-dashed rounded-xl p-3 text-center">Sin pedidos activos — lista para QR</p>}
                 <p className="text-xs text-zinc-400">Actualizado {formatDate(m.updatedAt)}</p>
+                <div className="flex justify-center bg-white rounded-2xl p-3 border border-black/[0.06]">
+                  <QRCodeSVG value={`${typeof window !== "undefined" ? window.location.origin : "http://localhost:3003"}/m/${m.numero}`} size={120} level="H" />
+                </div>
+                <p className="text-[11px] text-center tracking-wide text-zinc-500 break-all">/m/{m.numero} — escanea para pedir sin mesero</p>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" className="flex-1" onClick={() => handleToggle(m)}>Cambiar estado</Button>
-                  <Button size="sm" variant="ghost" className="flex-1" onClick={() => navigator.clipboard?.writeText(`${typeof window !== "undefined" ? window.location.origin : ""}/m/${m.numero}`)}>Copiar link QR</Button>
+                  <Button size="sm" variant="ghost" className="flex-1" onClick={() => navigator.clipboard?.writeText(`${typeof window !== "undefined" ? window.location.origin : ""}/m/${m.numero}`)}>Copiar link</Button>
                 </div>
-                <p className="text-[11px] text-zinc-400 tracking-wide">QR: /m/{m.numero} — se genera en siguiente entrega</p>
               </CardContent>
             </Card>
           );
