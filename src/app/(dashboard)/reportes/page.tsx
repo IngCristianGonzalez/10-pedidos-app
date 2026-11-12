@@ -88,7 +88,7 @@ export default function ReportesPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between gap-3">
-        <h1 className="text-2xl font-black">Reportes <span className="text-[#FF6B00]">— Cierre de caja</span></h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Reportes</h1>
         <div className="flex gap-2 flex-wrap">
           {(["hoy", "semana", "mes", "todos"] as const).map((f) => (
             <button key={f} onClick={() => setFiltro(f)} className={`px-3 py-1.5 rounded-full text-sm font-semibold border capitalize ${filtro === f ? "bg-[#FF6B00] text-white border-[#FF6B00]" : "bg-white hover:bg-zinc-50"}`}>{f}</button>
@@ -173,7 +173,7 @@ export default function ReportesPage() {
 
           <Card className="border-[#FF6B00]/30 bg-orange-50">
             <CardContent className="pt-4">
-              <p className="font-semibold text-sm tracking-tight">Resumen cierre — IVA incluido</p>
+              <p className="font-semibold text-sm tracking-tight">Resumen cierre</p>
               <div className="text-sm mt-2 space-y-1">
                 <div className="flex justify-between"><span>Ventas brutas</span><span className="font-semibold tabular-nums">{formatCOP(ventas)}</span></div>
                 <div className="flex justify-between"><span>Efectivo</span><span className="tabular-nums">{formatCOP(efectivo)}</span></div>
@@ -181,7 +181,7 @@ export default function ReportesPage() {
                 <div className="border-t pt-2 flex justify-between font-semibold text-base"><span>Neto caja</span><span className="tabular-nums">{formatCOP(ventas)}</span></div>
                 <div className="flex justify-between text-xs text-zinc-500"><span>Facturas</span><span>{facturasFiltradas.length} — {formatCOP(totalFacturas)}</span></div>
               </div>
-              <p className="text-xs text-zinc-500 mt-2">80mm solo caja — ticket cocina y factura imprimibles — IVA incluido.</p>
+              <p className="text-xs text-zinc-500 mt-2">Cierre por periodo — exporte CSV disponible.</p>
             </CardContent>
           </Card>
         </div>

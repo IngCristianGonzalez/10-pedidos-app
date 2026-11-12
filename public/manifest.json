@@ -1,0 +1,14 @@
+{
+  "name": "Gigi Papas — Comidas Rápidas",
+  "short_name": "Gigi Papas",
+  "description": "Pedidos por mesa con QR",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#FF6B00",
+  "icons": [
+    { "src": "/images/logo-gigi.jpeg", "sizes": "192x192", "type": "image/jpeg", "purpose": "any" },
+    { "src": "/images/logo-gigi.jpeg", "sizes": "512x512", "type": "image/jpeg", "purpose": "maskable" },
+    { "src": "/icon-512.jpg", "sizes": "512x512", "type": "image/jpeg" }
+  ]
+}

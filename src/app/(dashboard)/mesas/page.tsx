@@ -19,8 +19,8 @@ export default function MesasPage() {
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Mesas <span className="text-[#FF6B00]">— Gigi Papas</span></h1>
-          <p className="text-sm tracking-tight text-zinc-500">3 mesas • QR por mesa en siguiente entrega • Estado local, auto-libera al pagar</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Mesas</h1>
+          <p className="text-sm tracking-tight text-zinc-500">Gestion de mesas y codigos QR</p>
         </div>
         <div className="flex gap-2 self-start">
           <span className="text-xs bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">{mesas.filter((m) => m.estado === "disponible").length} disponibles</span>
@@ -58,7 +58,7 @@ export default function MesasPage() {
                 <div className="flex justify-center bg-white rounded-2xl p-3 border border-black/[0.06]">
                   <QRCodeSVG value={`${typeof window !== "undefined" ? window.location.origin : "http://localhost:3003"}/m/${m.numero}`} size={120} level="H" />
                 </div>
-                <p className="text-[11px] text-center tracking-wide text-zinc-500 break-all">/m/{m.numero} — escanea para pedir sin mesero</p>
+                <p className="text-[11px] text-center tracking-wide text-zinc-500 break-all">/m/{m.numero}</p>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" className="flex-1" onClick={() => handleToggle(m)}>Cambiar estado</Button>
                   <Button size="sm" variant="ghost" className="flex-1" onClick={() => navigator.clipboard?.writeText(`${typeof window !== "undefined" ? window.location.origin : ""}/m/${m.numero}`)}>Copiar link</Button>
@@ -71,8 +71,7 @@ export default function MesasPage() {
 
       <Card className="border-[#FF6B00]/20 bg-orange-50/50">
         <CardContent className="pt-4">
-          <p className="font-medium text-sm tracking-tight">Flujo</p>
-          <p className="text-sm text-zinc-600 tracking-tight">QR escanea → pide sin mesero → múltiples pedidos por mesa permitidos → ticket cocina completo impreso en caja → factura en caja → al pagar ultimo pedido mesa pasa a disponible automaticamente.</p>
+          <p className="text-sm text-zinc-600 tracking-tight">Escanea el QR de la mesa para ver el menu y pedir directamente.</p>
         </CardContent>
       </Card>
     </div>

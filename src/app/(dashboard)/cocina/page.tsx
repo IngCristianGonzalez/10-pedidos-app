@@ -45,14 +45,13 @@ export default function CocinaPage() {
   return (
     <div className="space-y-5">
       <div className="flex flex-col md:flex-row justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Cocina <span className="text-[#FF6B00] font-medium">— Cola Realtime local</span></h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Cocina</h1>
         <div className="flex gap-2 text-xs">
-          <span className="bg-amber-100 border border-amber-200 px-3 py-1 rounded-full font-medium tracking-tight">{pendientes.length} pendientes</span>
-          <span className="bg-orange-100 border border-orange-200 px-3 py-1 rounded-full font-medium tracking-tight">{enPrep.length} en preparacion</span>
-          <span className="bg-emerald-100 border border-emerald-200 px-3 py-1 rounded-full font-medium tracking-tight">{listos.length} listos</span>
+          <span className="bg-amber-100 border border-amber-200 px-3 py-1 rounded-full font-medium tracking-tight tabular-nums">{pendientes.length} pendientes</span>
+          <span className="bg-orange-100 border border-orange-200 px-3 py-1 rounded-full font-medium tracking-tight tabular-nums">{enPrep.length} en preparacion</span>
+          <span className="bg-emerald-100 border border-emerald-200 px-3 py-1 rounded-full font-medium tracking-tight tabular-nums">{listos.length} listos</span>
         </div>
       </div>
-      <p className="text-sm tracking-tight text-zinc-500">Simula Realtime: pendiente → en preparacion → listo. Luego Supabase Realtime channel <code>pedidos</code>. Se actualiza cada 30s.</p>
 
       <div className="grid lg:grid-cols-3 gap-4">
         <div className="space-y-3">

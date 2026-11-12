@@ -73,35 +73,35 @@ export default function CajaPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-black">Caja <span className="text-[#FF6B00]">— Cobro + Ticket</span></h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Caja</h1>
 
       <div className="grid md:grid-cols-3 gap-3">
         <Card className="bg-black text-white">
           <CardContent className="pt-6">
             <p className="text-sm text-white/60">Por cobrar</p>
-            <p className="text-2xl font-black">{formatCOP(totalPendiente)}</p>
-            <p className="text-xs text-white/50 mt-1">{filtrados.length} pedidos pendientes</p>
+            <p className="text-2xl font-semibold tabular-nums">{formatCOP(totalPendiente)}</p>
+            <p className="text-xs text-white/50 mt-1 tabular-nums">{filtrados.length} pedidos</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-zinc-500">Tickets cocina por imprimir</p>
-            <p className="text-xl font-semibold">{ticketsPendientes.length} pendientes</p>
-            <p className="text-xs text-zinc-400">Solo en caja — se lleva a cocina</p>
+            <p className="text-sm text-zinc-500">Tickets cocina</p>
+            <p className="text-xl font-semibold tabular-nums">{ticketsPendientes.length} por imprimir</p>
+            <p className="text-xs text-zinc-400">Se entrega en cocina</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-zinc-500">Factura</p>
-            <p className="font-bold">80mm navegador</p>
-            <p className="text-xs text-zinc-400">IVA incluido • window.print</p>
+            <p className="text-sm text-zinc-500">Facturas</p>
+            <p className="text-xl font-semibold tabular-nums">{facturas.length} generadas</p>
+            <p className="text-xs text-zinc-400">Impresion en caja</p>
           </CardContent>
         </Card>
       </div>
 
       {ticketsPendientes.length > 0 && (
         <Card className="border-orange-200 bg-orange-50/50">
-          <CardHeader><p className="font-semibold tracking-tight">Tickets cocina — imprimir en caja y llevar a cocina ({ticketsPendientes.length})</p><p className="text-xs text-zinc-500">Ticket completo por pedido — cocina sin impresora</p></CardHeader>
+          <CardHeader><p className="font-semibold tracking-tight">Tickets cocina ({ticketsPendientes.length})</p></CardHeader>
           <CardContent className="space-y-2">
             {ticketsPendientes.map((t) => (
               <div key={t.id} className="flex justify-between items-center bg-white border rounded-xl p-3">
@@ -120,8 +120,7 @@ export default function CajaPage() {
         {/* Lista */}
         <Card>
           <CardHeader>
-            <p className="font-bold">Pedidos por cobrar — {filtrados.length}</p>
-            <p className="text-xs text-zinc-500">Click para seleccionar y cobrar</p>
+            <p className="font-semibold tracking-tight">Pedidos por cobrar</p>
           </CardHeader>
           <CardContent className="space-y-2 max-h-[520px] overflow-auto">
             {filtrados.length === 0 && <p className="text-sm text-zinc-400 text-center py-8 border-2 border-dashed rounded-2xl">Todo cobrado</p>}

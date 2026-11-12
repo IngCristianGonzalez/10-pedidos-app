@@ -28,16 +28,16 @@ export default function LoginPage() {
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <div className="w-20 h-20 mx-auto rounded-full bg-[#FF6B00] flex items-center justify-center text-3xl font-black text-white border-4 border-white">G</div>
-          <h1 className="mt-3 text-3xl font-black text-[#FF6B00]">Gigi Papas</h1>
-          <p className="text-white/70 text-sm tracking-widest">COMIDAS RÁPIDAS</p>
-          <p className="text-white/50 text-xs mt-1">Cliente Duvan Basanta • Sistema de Pedidos</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/logo-gigi.jpeg" alt="Gigi Papas" className="w-20 h-20 mx-auto rounded-full border-4 border-white object-cover" />
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[#FF6B00]">Gigi Papas</h1>
+          <p className="text-white/70 text-sm tracking-widest">COMIDAS RAPIDAS</p>
         </div>
 
         <Card>
           <CardHeader>
-            <h2 className="font-bold text-lg">Iniciar sesión</h2>
-            <p className="text-sm text-zinc-500">Local mock — sin Supabase aún</p>
+            <h2 className="font-semibold tracking-tight text-lg">Iniciar sesion</h2>
+            <p className="text-sm text-zinc-500">Acceso por rol</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
@@ -46,16 +46,15 @@ export default function LoginPage() {
                 <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@gigipapas.com" />
               </div>
               <div>
-                <Label>Contraseña</Label>
+                <Label>Contrasena</Label>
                 <Input type="password" defaultValue="123456" placeholder="••••••" />
-                <p className="text-xs text-zinc-400 mt-1">Mock: cualquier contraseña válida si el email existe</p>
               </div>
               {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">{error}</p>}
               <Button type="submit" className="w-full">Entrar</Button>
             </form>
 
             <div className="mt-6">
-              <p className="text-xs font-semibold text-zinc-600 mb-2">Acceso rápido por rol:</p>
+              <p className="text-xs font-medium text-zinc-600 mb-2">Acceso por rol:</p>
               <div className="grid grid-cols-2 gap-2">
                 {USUARIOS_MOCK.map((u) => (
                   <button
@@ -69,7 +68,7 @@ export default function LoginPage() {
                 ))}
               </div>
             </div>
-            <p className="text-xs text-center text-zinc-400 mt-4">Medios de pago: efectivo + transferencia • Más tarde Supabase + Prisma</p>
+            <p className="text-xs text-center text-zinc-400 mt-4">Gigi Papas — Comidas Rapidas</p>
           </CardContent>
         </Card>
       </div>

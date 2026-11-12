@@ -85,7 +85,7 @@ export default function PedidosPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between gap-2">
-        <h1 className="text-2xl font-black">Pedidos <span className="text-[#FF6B00]">• Toma por mesa</span></h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Pedidos</h1>
         <div className="flex gap-2">
           <Input placeholder="Buscar mesa o ID" value={query} onChange={(e) => setQuery(e.target.value)} className="w-40" />
           <Select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
@@ -103,8 +103,8 @@ export default function PedidosPage() {
         {/* Menú */}
         <Card>
           <CardHeader className="flex flex-row justify-between items-center">
-            <p className="font-bold">Menú Gigi — click para agregar</p>
-            <span className="text-xs bg-zinc-100 px-2 py-1 rounded-full">{productos.filter((p) => p.disponible).length} disponibles</span>
+            <p className="font-semibold tracking-tight">Menu</p>
+            <span className="text-xs bg-zinc-100 px-2 py-1 rounded-full tabular-nums">{productos.filter((p) => p.disponible).length} disponibles</span>
           </CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-2 gap-3 max-h-[520px] overflow-auto pr-1">
@@ -132,21 +132,20 @@ export default function PedidosPage() {
         {/* Carrito */}
         <Card className="border-[#FF6B00]/20">
           <CardHeader>
-            <p className="font-bold">Carrito • Mesa</p>
-            <p className="text-xs text-zinc-500">Efectivo + transferencia (caja cobra después)</p>
+            <p className="font-semibold tracking-tight">Pedido</p>
+            <p className="text-xs text-zinc-500">Selecciona mesa y productos</p>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Mesa *</Label>
+                <Label>Mesa</Label>
                 <Select value={mesa} onChange={(e) => setMesa(e.target.value)}>
                   {mesas.map((m) => (
                     <option key={m.id} value={m.numero}>
-                      Mesa {m.numero} — {m.estado} ({m.pedidoActivoIds.length} pedidos)
+                      Mesa {m.numero} — {m.estado}
                     </option>
                   ))}
                 </Select>
-                <p className="text-[11px] text-zinc-400 mt-1">Multiples pedidos por mesa permitidos — QR / mesero</p>
               </div>
               <div className="flex flex-col justify-end">
                 <p className="text-xs text-zinc-500">Items</p>

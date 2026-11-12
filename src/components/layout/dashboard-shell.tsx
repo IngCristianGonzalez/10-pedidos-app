@@ -35,7 +35,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar desktop - Apple material dark */}
       <aside className="hidden md:flex w-64 flex-col material-dark text-white border-r border-white/10">
         <div className="p-5 flex items-center gap-3 border-b border-white/10">
-          <div className="w-10 h-10 rounded-xl bg-[#FF6B00] flex items-center justify-center font-semibold text-lg tracking-tight">G</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/logo-gigi.jpeg" alt="Gigi Papas" className="w-10 h-10 rounded-xl object-cover border border-white/20" />
           <div>
             <p className="font-semibold leading-none tracking-tight text-white">Gigi Papas</p>
             <p className="text-[11px] tracking-wide text-white/60 uppercase">Comidas Rapidas</p>
@@ -69,6 +70,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <header className="md:hidden material-dark text-white p-3 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-2">
             <button onClick={() => setOpen(!open)} className="p-2 rounded-xl bg-white/10 active:scale-95 transition">Menu</button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/logo-gigi.jpeg" alt="Gigi Papas" className="w-7 h-7 rounded-lg object-cover" />
             <span className="font-semibold tracking-tight text-white">Gigi Papas</span>
           </div>
           <span className="text-xs bg-[#FF6B00] px-2 py-1 rounded-full capitalize tracking-wide">{user.rol}</span>
@@ -85,7 +88,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         )}
         <main className="flex-1 p-4 md:p-6 max-w-7xl w-full mx-auto">{children}</main>
         <footer className="p-4 text-center text-xs tracking-wide text-zinc-500 border-t bg-white/70 backdrop-blur">
-          Gigi Papas — Cliente Duvan Basanta — MVP local — efectivo y transferencia
+          Gigi Papas — Comidas Rapidas
         </footer>
       </div>
     </div>

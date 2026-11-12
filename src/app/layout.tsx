@@ -16,8 +16,14 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Gigi Papas | Comidas Rápidas - Sistema de Pedidos",
-  description: "Sistema de gestión de pedidos para Gigi Papas - Cliente Duvan Basanta",
+  title: "Gigi Papas | Comidas Rápidas",
+  description: "Gigi Papas — Comidas Rápidas — Pedidos por mesa con QR",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/images/logo-gigi.jpeg",
+    apple: "/apple-icon.jpg",
+  },
+  appleWebApp: { capable: true, title: "Gigi Papas", statusBarStyle: "black-translucent" },
 };
 
 export default function RootLayout({

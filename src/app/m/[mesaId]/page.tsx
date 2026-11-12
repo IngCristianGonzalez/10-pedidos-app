@@ -93,10 +93,11 @@ export default function MesaPublicPage() {
     <div className="min-h-screen bg-[#fbfbfd]">
       <header className="sticky top-0 z-20 material border-b border-black/[0.06] px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#FF6B00] flex items-center justify-center font-semibold text-white">G</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/logo-gigi.jpeg" alt="Gigi Papas" className="w-9 h-9 rounded-xl object-cover border border-black/10" />
           <div>
             <p className="font-semibold tracking-tight leading-none">Gigi Papas</p>
-            <p className="text-[11px] tracking-wide text-zinc-500 uppercase">Mesa {mesa.numero} — {mesa.estado}</p>
+            <p className="text-[11px] tracking-wide text-zinc-500 uppercase">Mesa {mesa.numero}</p>
           </div>
         </div>
         <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${mesa.estado === "disponible" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-orange-50 border-orange-200 text-orange-700"}`}>{mesa.estado}</span>
@@ -105,14 +106,14 @@ export default function MesaPublicPage() {
       {ok && (
         <div className="mx-4 mt-4 bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
           <p className="font-semibold tracking-tight text-emerald-800">Pedido enviado — {ok}</p>
-          <p className="text-sm text-emerald-700">Tu pedido llego a caja y se imprimira ticket para cocina en caja. Paga en caja al terminar. Gracias.</p>
+          <p className="text-sm text-emerald-700">Recibido en cocina. Te avisamos cuando este listo.</p>
           <Button size="sm" className="mt-2" variant="outline" onClick={() => setOk(null)}>Hacer otro pedido</Button>
         </div>
       )}
 
       <main className="max-w-6xl mx-auto p-4 grid lg:grid-cols-[1.4fr_0.9fr] gap-6">
         <Card>
-          <CardHeader><p className="font-semibold tracking-tight">Menu — toca para agregar</p><p className="text-xs text-zinc-500">{disponibles.length} disponibles • IVA incluido</p></CardHeader>
+          <CardHeader><p className="font-semibold tracking-tight">Menu</p><p className="text-xs text-zinc-500 tabular-nums">{disponibles.length} disponibles</p></CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-2 gap-3">
               {disponibles.map((p) => (
@@ -132,7 +133,7 @@ export default function MesaPublicPage() {
         </Card>
 
         <Card className="border-[#FF6B00]/20 h-fit sticky top-[68px]">
-          <CardHeader><p className="font-semibold tracking-tight">Tu pedido — Mesa {mesa.numero}</p><p className="text-xs text-zinc-500">Multiples pedidos permitidos — se suman a mesa</p></CardHeader>
+          <CardHeader><p className="font-semibold tracking-tight">Tu pedido — Mesa {mesa.numero}</p></CardHeader>
           <CardContent className="space-y-3">
             {carrito.length === 0 ? <p className="text-sm text-zinc-400 text-center py-6 border-2 border-dashed rounded-2xl">Carrito vacio — toca un producto</p> : (
               <div className="space-y-2 max-h-64 overflow-auto">
@@ -152,14 +153,13 @@ export default function MesaPublicPage() {
               </div>
             )}
             <div><Label>Notas cocina</Label><Textarea value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Sin cebolla, extra queso..." rows={2} /></div>
-            <div className="bg-[#1d1d1f] text-white rounded-2xl p-3 flex justify-between items-center"><span className="font-medium">Total IVA incluido</span><span className="font-semibold text-[#FF6B00] tabular-nums">{formatCOP(totalCarrito)}</span></div>
-            <Button className="w-full" size="lg" onClick={handlePedir} disabled={carrito.length === 0}>Enviar pedido a cocina — Mesa {mesa.numero}</Button>
-            <p className="text-[11px] text-zinc-400 tracking-wide text-center">Se imprimira ticket completo en caja • Paga al finalizar en caja</p>
+            <div className="bg-[#1d1d1f] text-white rounded-2xl p-3 flex justify-between items-center"><span className="font-medium">Total</span><span className="font-semibold text-[#FF6B00] tabular-nums">{formatCOP(totalCarrito)}</span></div>
+            <Button className="w-full" size="lg" onClick={handlePedir} disabled={carrito.length === 0}>Enviar pedido — Mesa {mesa.numero}</Button>
           </CardContent>
         </Card>
       </main>
 
-      <footer className="p-6 text-center text-xs tracking-wide text-zinc-500">Gigi Papas — Comidas Rapidas — Ticket impreso solo en caja, cocina sin impresora</footer>
+      <footer className="p-6 text-center text-xs tracking-wide text-zinc-500">Gigi Papas — Comidas Rapidas</footer>
     </div>
   );
 }
