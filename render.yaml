@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: gigi-papas
+    runtime: node
+    plan: starter
+    region: oregon # cambia a virginia si prefieres
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: NEXT_PUBLIC_BASE_URL
+        sync: false
+    autoDeploy: true
