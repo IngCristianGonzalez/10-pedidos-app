@@ -51,7 +51,8 @@ export default function MesasPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Mesas</h1>
           <p className="text-sm tracking-tight text-zinc-500">Gestion de mesas y codigos QR — {mesas.length} mesas</p>
         </div>
-        <div className="flex gap-2 self-start items-center">
+        <div className="flex gap-2 self-start items-center flex-wrap">
+          <span className="text-xs bg-zinc-900 text-white px-3 py-1.5 rounded-full tabular-nums">{mesas.length} mesas</span>
           <span className="text-xs bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full tabular-nums">{mesas.filter((m) => m.estado === "disponible").length} disponibles</span>
           <span className="text-xs bg-orange-50 border border-orange-200 px-3 py-1.5 rounded-full tabular-nums">{mesas.filter((m) => m.estado === "ocupada").length} ocupadas</span>
           {isAdmin && <Button size="sm" onClick={() => setShowForm(!showForm)}>{showForm ? "Cerrar" : "+ Nueva mesa"}</Button>}
@@ -93,10 +94,7 @@ export default function MesasPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-zinc-500">Capacidad</span><span className="font-medium tabular-nums">{m.capacidad} pax</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-zinc-500">Pedidos activos</span><span className="font-semibold">{m.pedidoActivoIds.length}</span>
+                  <span className="text-zinc-500">Pedidos activos</span><span className="font-semibold tabular-nums">{m.pedidoActivoIds.length}</span>
                 </div>
                 {activos.length > 0 && (
                   <div className="bg-zinc-50 rounded-xl p-2.5 space-y-1">
