@@ -23,6 +23,7 @@ type StoreContextType = {
   deletePedido: (id: string) => void;
   addMesa: (m: Mesa) => void;
   updateMesa: (id: string, data: Partial<Mesa>) => void;
+  deleteMesa: (id: string) => void;
   ocuparMesa: (mesaId: string, pedidoId: string) => void;
   liberarMesaSiVacia: (mesaId: string, pedidoId: string) => void;
   addTicketCocina: (t: TicketCocina) => void;
@@ -91,6 +92,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const addMesa = (m: Mesa) => setMesas((prev) => [...prev, m]);
   const updateMesa = (id: string, data: Partial<Mesa>) =>
     setMesas((prev) => prev.map((m) => (m.id === id ? { ...m, ...data, updatedAt: new Date().toISOString() } : m)));
+  const deleteMesa = (id: string) => setMesas((prev) => prev.filter((m) => m.id !== id));
   const ocuparMesa = (mesaId: string, pedidoId: string) =>
     setMesas((prev) => prev.map((m) => (m.id === mesaId ? { ...m, estado: "ocupada" as const, pedidoActivoIds: [...m.pedidoActivoIds, pedidoId], updatedAt: new Date().toISOString() } : m)));
   const liberarMesaSiVacia = (mesaId: string, pedidoId: string) =>
@@ -122,7 +124,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreContext.Provider
-      value={{ productos, pedidos, mesas, ticketsCocina, facturas, addProducto, updateProducto, deleteProducto, addPedido, updatePedido, deletePedido, addMesa, updateMesa, ocuparMesa, liberarMesaSiVacia, addTicketCocina, updateTicketCocina, addFactura, resetMock }}
+      value={{ productos, pedidos, mesas, ticketsCocina, facturas, addProducto, updateProducto, deleteProducto, addPedido, updatePedido, deletePedido, addMesa, updateMesa, deleteMesa, ocuparMesa, liberarMesaSiVacia, addTicketCocina, updateTicketCocina, addFactura, resetMock }}
     >
       {children}
     </StoreContext.Provider>
