@@ -91,7 +91,6 @@ export default function LoginPage() {
               <div>
                 <Label>Contraseña</Label>
                 <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••" />
-                <p className="text-xs text-zinc-400 mt-1">Por defecto: 123456</p>
               </div>
               {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">{error}</p>}
               <Button type="submit" className="w-full">Entrar</Button>

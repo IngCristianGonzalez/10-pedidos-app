@@ -88,7 +88,7 @@ export default function CuentaPage() {
       <Card className="border-[#FF6B00]/20">
         <CardHeader>
           <p className="font-bold">Cambiar contraseña</p>
-          <p className="text-sm text-zinc-500">Actualiza tu contraseña. Por defecto es 123456.</p>
+          <p className="text-sm text-zinc-500">Actualiza tu contraseña.</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleChangePass} className="space-y-3">
