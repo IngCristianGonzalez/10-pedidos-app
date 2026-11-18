@@ -50,7 +50,7 @@ type StoreContextType = {
 
 const StoreContext = createContext<StoreContextType | null>(null);
 
-// helper: fire-and-forget supabase with error log — accepts PromiseLike from supabase-js
+// helper: fire-and-forget supabase with error log accepts PromiseLike from supabase-js
 function sbLog(p: PromiseLike<unknown>, ctx: string) {
   Promise.resolve(p as unknown as Promise<unknown>).then((res: unknown) => {
     const r = res as { error?: { message: string } | null };

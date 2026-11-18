@@ -84,12 +84,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 {n.label}
               </Link>
             ))}
-            <button onClick={handleLogout} className="w-full text-left px-3 py-2 rounded-xl bg-white/10 mt-2 text-sm">Cerrar sesion — {user.nombre}</button>
+            <button onClick={handleLogout} className="w-full text-left px-3 py-2 rounded-xl bg-white/10 mt-2 text-sm">Cerrar sesion {user.nombre}</button>
           </div>
         )}
         <main className="flex-1 p-4 md:p-6 max-w-7xl w-full mx-auto">{children}</main>
         <footer className="p-4 text-center text-xs tracking-wide text-zinc-500 border-t bg-white/70 backdrop-blur">
-          Gigi Papas — Comidas Rapidas
+          Gigi Papas Comidas Rapidas
         </footer>
       </div>
     </div>

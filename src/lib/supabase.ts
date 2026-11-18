@@ -10,7 +10,7 @@ export const supabase = isSupabaseConfigured ? createClient(url!, anon!) : null;
 
 export function getSupabase() {
   if (!isSupabaseConfigured) {
-    console.warn("Supabase no configurado — usando localStorage fallback. Define NEXT_PUBLIC_SUPABASE_URL y ANON_KEY en Render env.");
+    console.warn("Supabase no configurado usando localStorage fallback. Define NEXT_PUBLIC_SUPABASE_URL y ANON_KEY en Render env.");
     return null;
   }
   return supabase;

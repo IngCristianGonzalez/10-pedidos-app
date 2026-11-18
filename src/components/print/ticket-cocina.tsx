@@ -7,10 +7,10 @@ export function TicketCocinaPrint({ ticket }: { ticket: TicketCocina }) {
     <div id="print-cocina" className="bg-white p-6 max-w-[320px] mx-auto font-mono text-[11px] leading-tight">
       <div className="text-center border-b-2 border-black border-dashed pb-2 mb-2">
         <p className="font-bold text-[16px] tracking-tight">GIGI PAPAS</p>
-        <p className="text-[10px] tracking-widest">COCINA — TICKET</p>
+        <p className="text-[10px] tracking-widest">COCINA TICKET</p>
         <p className="font-bold text-[14px] mt-1">MESA {ticket.numeroMesa}</p>
         <p className="text-[10px]">{ticket.pedidoId} • {formatDate(ticket.createdAt)}</p>
-        <p className="text-[10px]">Impresion caja — llevar a cocina</p>
+        <p className="text-[10px]">Impresion caja llevar a cocina</p>
       </div>
       <div className="space-y-1">
         {ticket.items.map((i) => (
@@ -28,7 +28,7 @@ export function TicketCocinaPrint({ ticket }: { ticket: TicketCocina }) {
       )}
       <div className="text-center border-t-2 border-black border-dashed mt-3 pt-2">
         <p className="font-bold">*** CORTAR AQUI ***</p>
-        <p className="text-[9px]">Ticket completo por pedido — 80mm — IVA incluido</p>
+        <p className="text-[9px]">Ticket completo por pedido 80mm IVA incluido</p>
         <p className="text-[9px]">Reimpresiones: {ticket.reimpresiones}</p>
       </div>
     </div>

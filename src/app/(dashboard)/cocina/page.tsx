@@ -26,7 +26,7 @@ export default function CocinaPage() {
       <div className="flex justify-between items-start">
         <div>
           <p className="font-semibold tracking-tight">Mesa {p.mesa} <span className="text-zinc-400 font-normal">• {p.id}</span></p>
-          <p className="text-xs tracking-wide text-zinc-500">{formatDate(p.createdAt)} — hace {minutes(p.createdAt)} min</p>
+          <p className="text-xs tracking-wide text-zinc-500">{formatDate(p.createdAt)} hace {minutes(p.createdAt)} min</p>
         </div>
         <Badge className={ESTADOS_COLOR[p.estado]}>{ESTADOS_LABEL[p.estado]}</Badge>
       </div>

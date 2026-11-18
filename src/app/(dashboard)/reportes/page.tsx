@@ -106,7 +106,7 @@ export default function ReportesPage() {
       <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-4">
         <Card>
           <CardHeader className="flex flex-row justify-between items-center">
-            <p className="font-bold">Cierre {filtro} — {filtrados.length} pedidos</p>
+            <p className="font-bold">Cierre {filtro} {filtrados.length} pedidos</p>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={exportCSV}>CSV</Button>
               <Button size="sm" variant="outline" onClick={handlePrint}>PDF</Button>
@@ -155,14 +155,14 @@ export default function ReportesPage() {
           </Card>
 
           <Card>
-            <CardHeader><p className="font-semibold tracking-tight">Facturas {filtro} — {facturasFiltradas.length}</p><div className="flex gap-1"><Button size="sm" variant="outline" onClick={exportCSVFacturas}>CSV Facturas</Button></div></CardHeader>
+            <CardHeader><p className="font-semibold tracking-tight">Facturas {filtro} {facturasFiltradas.length}</p><div className="flex gap-1"><Button size="sm" variant="outline" onClick={exportCSVFacturas}>CSV Facturas</Button></div></CardHeader>
             <CardContent className="space-y-2 max-h-[320px] overflow-auto">
-              {facturasFiltradas.length === 0 && <p className="text-sm text-zinc-400 text-center py-4">Sin facturas — cobra en caja para generar</p>}
+              {facturasFiltradas.length === 0 && <p className="text-sm text-zinc-400 text-center py-4">Sin facturas cobra en caja para generar</p>}
               {facturasFiltradas.map((f) => (
                 <div key={f.id} className="flex justify-between items-center bg-zinc-50 rounded-xl p-2.5 border">
                   <div>
-                    <p className="font-medium text-sm tracking-tight">{f.consecutivo} — Mesa {f.numeroMesa} • {f.pedidoId}</p>
-                    <p className="text-xs text-zinc-500">{formatDate(f.createdAt)} — {f.medioPago} — {formatCOP(f.total)}</p>
+                    <p className="font-medium text-sm tracking-tight">{f.consecutivo} Mesa {f.numeroMesa} • {f.pedidoId}</p>
+                    <p className="text-xs text-zinc-500">{formatDate(f.createdAt)} {f.medioPago} {formatCOP(f.total)}</p>
                   </div>
                   <Button size="sm" variant="outline" onClick={() => { setFacturaSel(f.id); setTimeout(() => printElement("print-factura"), 100); }}>Reimprimir</Button>
                 </div>
@@ -179,9 +179,9 @@ export default function ReportesPage() {
                 <div className="flex justify-between"><span>Efectivo</span><span className="tabular-nums">{formatCOP(efectivo)}</span></div>
                 <div className="flex justify-between"><span>Transferencia</span><span className="tabular-nums">{formatCOP(transferencia)}</span></div>
                 <div className="border-t pt-2 flex justify-between font-semibold text-base"><span>Neto caja</span><span className="tabular-nums">{formatCOP(ventas)}</span></div>
-                <div className="flex justify-between text-xs text-zinc-500"><span>Facturas</span><span>{facturasFiltradas.length} — {formatCOP(totalFacturas)}</span></div>
+                <div className="flex justify-between text-xs text-zinc-500"><span>Facturas</span><span>{facturasFiltradas.length} {formatCOP(totalFacturas)}</span></div>
               </div>
-              <p className="text-xs text-zinc-500 mt-2">Cierre por periodo — exporte CSV disponible.</p>
+              <p className="text-xs text-zinc-500 mt-2">Cierre por periodo exporte CSV disponible.</p>
             </CardContent>
           </Card>
         </div>

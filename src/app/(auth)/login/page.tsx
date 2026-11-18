@@ -48,7 +48,7 @@ export default function LoginPage() {
           <Card>
             <CardHeader>
               <h2 className="font-semibold tracking-tight text-lg">Verificación en dos pasos</h2>
-              <p className="text-sm text-zinc-500">Admin — ingresa el código de 6 dígitos</p>
+              <p className="text-sm text-zinc-500">Admin ingresa el código de 6 dígitos</p>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleVerify} className="space-y-4">
@@ -110,7 +110,7 @@ export default function LoginPage() {
                 ))}
               </div>
             </div>
-            <p className="text-xs text-center text-zinc-400 mt-4">Gigi Papas — Comidas Rapidas</p>
+            <p className="text-xs text-center text-zinc-400 mt-4">Gigi Papas Comidas Rapidas</p>
           </CardContent>
         </Card>
       </div>

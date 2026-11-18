@@ -17,7 +17,7 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "Gigi Papas | Comidas Rápidas",
-  description: "Gigi Papas — Comidas Rápidas — Pedidos por mesa con QR",
+  description: "Gigi Papas Comidas Rápidas Pedidos por mesa con QR",
   manifest: "/manifest.json",
   icons: {
     icon: [

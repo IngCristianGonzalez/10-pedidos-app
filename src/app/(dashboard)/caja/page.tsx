@@ -30,7 +30,7 @@ export default function CajaPage() {
 
   const handleCobrar = () => {
     if (!selected) return;
-    if (medio === "efectivo" && efectivoRecibido < selected.total) { setAlertMsg("Efectivo insuficiente — el monto recibido es menor al total."); return; }
+    if (medio === "efectivo" && efectivoRecibido < selected.total) { setAlertMsg("Efectivo insuficiente el monto recibido es menor al total."); return; }
     const consecutivo = `FAC-${String(facturas.length + 1).padStart(6, "0")}`;
     const subtotal = Math.round(selected.total / 1.19);
     const ivaIncluido = selected.total - subtotal;
@@ -108,7 +108,7 @@ export default function CajaPage() {
             {ticketsPendientes.map((t) => (
               <div key={t.id} className="flex justify-between items-center bg-white border rounded-xl p-3">
                 <div>
-                  <p className="font-medium text-sm">Mesa {t.numeroMesa} — {t.pedidoId}</p>
+                  <p className="font-medium text-sm">Mesa {t.numeroMesa} {t.pedidoId}</p>
                   <p className="text-xs text-zinc-500">{t.items.map((i) => `${i.cantidad}x ${i.nombre}`).join(" • ")} • {formatDate(t.createdAt)}</p>
                 </div>
                 <Button size="sm" onClick={() => handlePrintCocina(t.id)}>Imprimir cocina</Button>
@@ -150,7 +150,7 @@ export default function CajaPage() {
         <Card className="border-[#FF6B00]/30">
           <CardHeader>
             <p className="font-bold">Cobro</p>
-            {selected ? <p className="text-sm text-zinc-500">Seleccionado: <b>{selected.id}</b> — Mesa {selected.mesa}</p> : <p className="text-sm text-zinc-400">Selecciona un pedido</p>}
+            {selected ? <p className="text-sm text-zinc-500">Seleccionado: <b>{selected.id}</b> Mesa {selected.mesa}</p> : <p className="text-sm text-zinc-400">Selecciona un pedido</p>}
           </CardHeader>
           <CardContent className="space-y-4">
             {!selected ? (
@@ -190,8 +190,8 @@ export default function CajaPage() {
 
                 {medio === "transferencia" && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
-                    <p className="font-bold">Transferencia — Gigi Papas</p>
-                    <p className="text-xs text-zinc-600">Nequi / Bancolombia — confirmar comprobante antes de cobrar</p>
+                    <p className="font-bold">Transferencia Gigi Papas</p>
+                    <p className="text-xs text-zinc-600">Nequi / Bancolombia confirmar comprobante antes de cobrar</p>
                   </div>
                 )}
 
@@ -216,7 +216,7 @@ export default function CajaPage() {
       </div>
       {selectedTicketCocina && (
         <div className="no-print bg-amber-50 border border-amber-200 rounded-xl p-3 flex justify-between items-center">
-          <p className="text-sm">Ticket cocina para {selectedTicketCocina.pedidoId} — Mesa {selectedTicketCocina.numeroMesa} {selectedTicketCocina.impresoEn ? `impreso ${formatDate(selectedTicketCocina.impresoEn)}` : "pendiente"}</p>
+          <p className="text-sm">Ticket cocina para {selectedTicketCocina.pedidoId} Mesa {selectedTicketCocina.numeroMesa} {selectedTicketCocina.impresoEn ? `impreso ${formatDate(selectedTicketCocina.impresoEn)}` : "pendiente"}</p>
           <Button size="sm" variant="outline" onClick={() => handlePrintCocina(selectedTicketCocina.id)}>{selectedTicketCocina.impresoEn ? "Reimprimir cocina" : "Imprimir cocina"}</Button>
         </div>
       )}
@@ -228,7 +228,7 @@ export default function CajaPage() {
           if (!fac) return null;
           return (
             <div className="space-y-2">
-              <p className="text-sm font-medium tracking-tight">Ultima factura {fac.consecutivo} generada — Mesa {fac.numeroMesa}</p>
+              <p className="text-sm font-medium tracking-tight">Ultima factura {fac.consecutivo} generada Mesa {fac.numeroMesa}</p>
               <FacturaPrint factura={fac} />
               <div className="flex gap-2 no-print">
                 <Button size="sm" variant="outline" onClick={() => printElement("print-factura")}>Reimprimir factura</Button>
@@ -242,7 +242,7 @@ export default function CajaPage() {
           <div className="text-center border-b border-dashed pb-3 mb-3">
             <p className="font-bold text-lg tracking-tight text-[#FF6B00]">GIGI PAPAS</p>
             <p className="text-xs tracking-widest">COMIDAS RAPIDAS</p>
-            <p className="text-xs text-zinc-500">Preview factura — genera al cobrar</p>
+            <p className="text-xs text-zinc-500">Preview factura genera al cobrar</p>
             <p className="text-xs">Pedido: {selected.id} • Mesa {selected.mesa}</p>
             <p className="text-xs text-zinc-400">{formatDate(selected.createdAt)}</p>
           </div>

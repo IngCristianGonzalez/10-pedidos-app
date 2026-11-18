@@ -73,7 +73,7 @@ export default function CuentaPage() {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-black tracking-tight">Mi cuenta <span className="text-[#FF6B00]">— Gigi Papas</span></h1>
+      <h1 className="text-2xl font-black tracking-tight">Mi cuenta <span className="text-[#FF6B00]">Gigi Papas</span></h1>
       <Card>
         <CardContent className="pt-6 flex items-center gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -153,7 +153,7 @@ export default function CuentaPage() {
                   <p className="text-sm font-bold text-emerald-800">2FA activo</p>
                   <p className="text-xs text-zinc-600">Código actual:</p>
                   <p className="font-mono font-black text-3xl tracking-widest text-[#FF6B00]">{liveCode}</p>
-                  <p className="text-xs text-zinc-500">Cambia cada 30s — úsalo en el login</p>
+                  <p className="text-xs text-zinc-500">Cambia cada 30s úsalo en el login</p>
                   {secret && (
                     <div className="pt-2">
                       <p className="text-xs text-zinc-500">QR / clave:</p>

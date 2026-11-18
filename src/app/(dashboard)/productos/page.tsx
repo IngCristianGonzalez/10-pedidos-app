@@ -67,7 +67,7 @@ export default function ProductosPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <h1 className="text-2xl font-black">Productos <span className="text-[#FF6B00]">— Menú Gigi</span></h1>
+        <h1 className="text-2xl font-black">Productos <span className="text-[#FF6B00]">Menú Gigi</span></h1>
         <div className="flex gap-2">
           <span className="bg-black text-white px-3 py-1.5 rounded-full text-sm self-center">{productos.length} productos</span>
           {canEdit && <Button onClick={() => { setEditing(null); setForm({ nombre: "", descripcion: "", precio: 0, categoria: "otros", imagen: "", disponible: true }); setShowForm(!showForm); }}>{showForm ? "Cerrar" : "+ Nuevo"}</Button>}

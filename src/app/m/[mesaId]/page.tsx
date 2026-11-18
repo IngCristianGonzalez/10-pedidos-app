@@ -81,7 +81,7 @@ export default function MesaPublicPage() {
           <CardContent className="pt-6">
             <p className="font-semibold tracking-tight">Mesa no encontrada</p>
             <p className="text-sm text-zinc-500 mt-1">Verifica el QR. Mesas validas: 1, 2, 3. Este link es /m/{idOrNumero}.</p>
-            <p className="text-xs text-zinc-400 mt-3">Publico sin login — escanea QR de mesa para pedir.</p>
+            <p className="text-xs text-zinc-400 mt-3">Publico sin login escanea QR de mesa para pedir.</p>
           </CardContent>
         </Card>
       </div>
@@ -107,7 +107,7 @@ export default function MesaPublicPage() {
 
       {ok && (
         <div className="mx-4 mt-4 bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-          <p className="font-semibold tracking-tight text-emerald-800">Pedido enviado — {ok}</p>
+          <p className="font-semibold tracking-tight text-emerald-800">Pedido enviado {ok}</p>
           <p className="text-sm text-emerald-700">Recibido en cocina. Te avisamos cuando este listo.</p>
           <Button size="sm" className="mt-2" variant="outline" onClick={() => setOk(null)}>Hacer otro pedido</Button>
         </div>
@@ -135,9 +135,9 @@ export default function MesaPublicPage() {
         </Card>
 
         <Card className="border-[#FF6B00]/20 h-fit sticky top-[68px]">
-          <CardHeader><p className="font-semibold tracking-tight">Tu pedido — Mesa {mesa.numero}</p></CardHeader>
+          <CardHeader><p className="font-semibold tracking-tight">Tu pedido Mesa {mesa.numero}</p></CardHeader>
           <CardContent className="space-y-3">
-            {carrito.length === 0 ? <p className="text-sm text-zinc-400 text-center py-6 border-2 border-dashed rounded-2xl">Carrito vacio — toca un producto</p> : (
+            {carrito.length === 0 ? <p className="text-sm text-zinc-400 text-center py-6 border-2 border-dashed rounded-2xl">Carrito vacio toca un producto</p> : (
               <div className="space-y-2 max-h-64 overflow-auto">
                 {carrito.map((i) => (
                   <div key={i.productoId} className="flex justify-between items-center bg-zinc-50 rounded-xl p-2.5">
@@ -156,12 +156,12 @@ export default function MesaPublicPage() {
             )}
             <div><Label>Notas cocina</Label><Textarea value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Sin cebolla, extra queso..." rows={2} /></div>
             <div className="bg-[#1d1d1f] text-white rounded-2xl p-3 flex justify-between items-center"><span className="font-medium">Total</span><span className="font-semibold text-[#FF6B00] tabular-nums">{formatCOP(totalCarrito)}</span></div>
-            <Button className="w-full" size="lg" onClick={handlePedir} disabled={carrito.length === 0}>Enviar pedido — Mesa {mesa.numero}</Button>
+            <Button className="w-full" size="lg" onClick={handlePedir} disabled={carrito.length === 0}>Enviar pedido Mesa {mesa.numero}</Button>
           </CardContent>
         </Card>
       </main>
 
-      <footer className="p-6 text-center text-xs tracking-wide text-zinc-500">Gigi Papas — Comidas Rapidas</footer>
+      <footer className="p-6 text-center text-xs tracking-wide text-zinc-500">Gigi Papas Comidas Rapidas</footer>
       <AlertModal open={!!alertMsg} onClose={() => setAlertMsg(null)} title="Falta agregar productos" description={alertMsg ?? ""} />
     </div>
   );

@@ -145,7 +145,7 @@ export default function PedidosPage() {
                 <Select value={mesa} onChange={(e) => setMesa(e.target.value)}>
                   {mesas.map((m) => (
                     <option key={m.id} value={m.numero}>
-                      Mesa {m.numero} — {m.estado}
+                      Mesa {m.numero} {m.estado}
                     </option>
                   ))}
                 </Select>
@@ -157,7 +157,7 @@ export default function PedidosPage() {
             </div>
 
             {carrito.length === 0 ? (
-              <p className="text-sm text-zinc-400 text-center py-6 border-2 border-dashed rounded-xl">Carrito vacío — toca un producto</p>
+              <p className="text-sm text-zinc-400 text-center py-6 border-2 border-dashed rounded-xl">Carrito vacío toca un producto</p>
             ) : (
               <div className="space-y-2 max-h-64 overflow-auto">
                 {carrito.map((i) => (
@@ -188,7 +188,7 @@ export default function PedidosPage() {
             </div>
 
             <Button className="w-full" size="lg" onClick={handleCrear} disabled={carrito.length === 0 || !mesa}>
-              Crear pedido — Mesa {mesa || "?"}
+              Crear pedido Mesa {mesa || "?"}
             </Button>
             {carrito.length > 0 && <Button variant="outline" className="w-full" onClick={() => setCarrito([])}>Vaciar</Button>}
           </CardContent>
@@ -197,7 +197,7 @@ export default function PedidosPage() {
 
       {/* Lista pedidos */}
       <div className="space-y-3">
-        <h2 className="font-bold text-lg">Pedidos recientes — {pedidosFiltrados.length} / {pedidos.length}</h2>
+        <h2 className="font-bold text-lg">Pedidos recientes {pedidosFiltrados.length} / {pedidos.length}</h2>
         {pedidosFiltrados.map((p) => (
           <Card key={p.id}>
             <CardContent className="py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">

@@ -52,7 +52,7 @@ export default function MesasPage() {
       <div className="flex flex-col md:flex-row justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Mesas</h1>
-          <p className="text-sm tracking-tight text-zinc-500">Gestion de mesas y codigos QR — {mesas.length} mesas</p>
+          <p className="text-sm tracking-tight text-zinc-500">Gestion de mesas y codigos QR {mesas.length} mesas</p>
         </div>
         <div className="flex gap-2 self-start items-center flex-wrap">
           <span className="text-xs bg-zinc-900 text-white px-3 py-1.5 rounded-full tabular-nums">{mesas.length} mesas</span>
@@ -108,7 +108,7 @@ export default function MesasPage() {
                     ))}
                   </div>
                 )}
-                {m.pedidoActivoIds.length === 0 && <p className="text-xs text-zinc-400 bg-white border border-dashed rounded-xl p-3 text-center">Sin pedidos activos — lista para QR</p>}
+                {m.pedidoActivoIds.length === 0 && <p className="text-xs text-zinc-400 bg-white border border-dashed rounded-xl p-3 text-center">Sin pedidos activos lista para QR</p>}
                 <p className="text-xs text-zinc-400">Actualizado {formatDate(m.updatedAt)}</p>
                 <div className="flex justify-center bg-white rounded-2xl p-3 border border-black/[0.06]">
                   <QRCodeSVG value={`${typeof window !== "undefined" ? window.location.origin : "http://localhost:3003"}/m/${m.numero}`} size={120} level="H" />
