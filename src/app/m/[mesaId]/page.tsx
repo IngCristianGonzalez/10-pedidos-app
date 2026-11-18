@@ -6,14 +6,18 @@ import { formatCOP, uid } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea, Label } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { DetallePedido, EstadoPedido } from "@/types";
+import { DetallePedido, EstadoPedido, ESTADOS_COLOR, ESTADOS_LABEL } from "@/types";
 import { AlertModal } from "@/components/ui/modal";
+import { Badge } from "@/components/ui/badge";
+import { formatDate } from "@/lib/utils";
 
 export default function MesaPublicPage() {
   const params = useParams<{ mesaId: string }>();
   const idOrNumero = decodeURIComponent(params.mesaId || "");
-  const { mesas, productos, addPedido, ocuparMesa, addTicketCocina } = useStore();
+  const { mesas, productos, pedidos, addPedido, ocuparMesa, addTicketCocina } = useStore();
   const mesa = mesas.find((m) => m.numero === idOrNumero || m.id === idOrNumero);
+  const pedidosMesa = mesa ? pedidos.filter((p) => p.mesa === mesa.numero || p.mesaId === mesa.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) : [];
+  const pedidoActivo = pedidosMesa.find((p) => !["pagado", "cancelado"].includes(p.estado));
   const [carrito, setCarrito] = useState<DetallePedido[]>([]);
   const [notas, setNotas] = useState("");
   const [ok, setOk] = useState<string | null>(null);
@@ -102,7 +106,10 @@ export default function MesaPublicPage() {
             <p className="text-[11px] tracking-wide text-zinc-500 uppercase">Mesa {mesa.numero}</p>
           </div>
         </div>
-        <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${mesa.estado === "disponible" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-orange-50 border-orange-200 text-orange-700"}`}>{mesa.estado}</span>
+        <div className="flex items-center gap-2">
+          <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${mesa.estado === "disponible" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-orange-50 border-orange-200 text-orange-700"}`}>{mesa.estado}</span>
+          {pedidoActivo && <Badge className={ESTADOS_COLOR[pedidoActivo.estado]}>{ESTADOS_LABEL[pedidoActivo.estado]}</Badge>}
+        </div>
       </header>
 
       {ok && (
@@ -110,6 +117,41 @@ export default function MesaPublicPage() {
           <p className="font-semibold tracking-tight text-emerald-800">Pedido enviado {ok}</p>
           <p className="text-sm text-emerald-700">Recibido en cocina. Te avisamos cuando este listo.</p>
           <Button size="sm" className="mt-2" variant="outline" onClick={() => setOk(null)}>Hacer otro pedido</Button>
+        </div>
+      )}
+
+      {pedidosMesa.length > 0 && (
+        <div className="max-w-6xl mx-auto px-4 mt-4">
+          <Card className="border-[#FF6B00]/20 bg-orange-50/30">
+            <CardHeader className="pb-2">
+              <p className="font-bold tracking-tight">Estado de tu pedido Mesa {mesa.numero}</p>
+              <p className="text-xs text-zinc-500">Mesa {mesa.estado} • {pedidosMesa.length} pedido(s) en esta mesa</p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {pedidosMesa.slice(0, 3).map((p) => (
+                <div key={p.id} className="bg-white border rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-black text-sm">{p.id}</span>
+                      <Badge className={ESTADOS_COLOR[p.estado]}>{ESTADOS_LABEL[p.estado]}</Badge>
+                      <span className="text-xs bg-zinc-100 px-2 py-0.5 rounded-full">{formatDate(p.createdAt)}</span>
+                    </div>
+                    <p className="text-sm text-zinc-600 mt-1">{p.items.map((i) => `${i.cantidad}x ${i.nombre}`).join(" • ")}</p>
+                    <p className="text-xs text-zinc-400">{p.notas ? `Notas: ${p.notas} • ` : ""}{formatCOP(p.total)}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {(["pendiente", "en_preparacion", "listo", "entregado"] as EstadoPedido[]).map((est, idx) => (
+                      <div key={est} className="flex items-center gap-1">
+                        <span className={`w-2 h-2 rounded-full ${p.estado === est ? "bg-[#FF6B00]" : ["pendiente", "en_preparacion", "listo", "entregado"].indexOf(p.estado) > idx ? "bg-emerald-400" : "bg-zinc-200"}`} />
+                        {idx < 3 && <span className="w-4 h-0.5 bg-zinc-200 hidden sm:block" />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {pedidosMesa.length === 0 && <p className="text-sm text-zinc-400 text-center">Sin pedidos aún</p>}
+            </CardContent>
+          </Card>
         </div>
       )}
 
