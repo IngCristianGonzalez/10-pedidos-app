@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStore, calcTotal } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { formatCOP, formatDate, uid } from "@/lib/utils";
@@ -16,10 +16,18 @@ export default function PedidosPage() {
   const [mesa, setMesa] = useState("1");
   const [notas, setNotas] = useState("");
   const [carrito, setCarrito] = useState<DetallePedido[]>([]);
-  const [filtroEstado, setFiltroEstado] = useState<string>("todos");
+  const [filtroEstado, setFiltroEstado] = useState<string>(user?.rol === "mesero" ? "pendiente" : "todos");
+  const [soloPendientes, setSoloPendientes] = useState(user?.rol === "mesero");
   const [query, setQuery] = useState("");
   const [confirmPedido, setConfirmPedido] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.rol === "mesero" && !soloPendientes) {
+      setSoloPendientes(true);
+      setFiltroEstado("pendiente");
+    }
+  }, [user?.rol]);
 
   const addToCart = (productoId: string) => {
     const p = productos.find((x) => x.id === productoId);
@@ -78,10 +86,12 @@ export default function PedidosPage() {
   };
 
   const pedidosFiltrados = pedidos.filter((p) => {
+    if (soloPendientes && p.estado !== "pendiente") return false;
     const matchEstado = filtroEstado === "todos" || p.estado === filtroEstado;
     const matchQuery = query === "" || p.mesa.includes(query) || p.id.toLowerCase().includes(query.toLowerCase());
     return matchEstado && matchQuery;
   });
+  const pendientesCount = pedidos.filter((p) => p.estado === "pendiente").length;
 
   const totalCarrito = calcTotal(carrito);
 
@@ -89,9 +99,13 @@ export default function PedidosPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Pedidos</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap items-center">
+          <label className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium cursor-pointer select-none ${soloPendientes ? "bg-[#FF6B00] text-white border-[#FF6B00]" : "bg-white hover:bg-zinc-50"}`}>
+            <input type="checkbox" checked={soloPendientes} onChange={(e) => { setSoloPendientes(e.target.checked); if (e.target.checked) setFiltroEstado("pendiente"); }} className="accent-[#FF6B00]" />
+            Solo pendientes {pendientesCount > 0 && <span className={`px-1.5 py-0.5 rounded-full text-xs ${soloPendientes ? "bg-white text-[#FF6B00]" : "bg-[#FF6B00] text-white"}`}>{pendientesCount}</span>}
+          </label>
           <Input placeholder="Buscar mesa o ID" value={query} onChange={(e) => setQuery(e.target.value)} className="w-40" />
-          <Select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
+          <Select value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); if (e.target.value !== "pendiente") setSoloPendientes(false); else setSoloPendientes(true); }}>
             <option value="todos">Todos</option>
             <option value="pendiente">Pendiente</option>
             <option value="en_preparacion">En preparación</option>
