@@ -21,6 +21,7 @@ export default function MesasPage() {
   const [error, setError] = useState("");
   const [confirmMesa, setConfirmMesa] = useState<Mesa | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [alertTitle, setAlertTitle] = useState("Acción no permitida");
 
   const handleToggle = (m: Mesa) => {
     const next = m.estado === "disponible" ? "ocupada" : m.estado === "ocupada" ? "reservada" : "disponible";
@@ -42,7 +43,7 @@ export default function MesasPage() {
   };
 
   const handleDelete = (m: Mesa) => {
-    if (m.pedidoActivoIds.length > 0) { setAlertMsg("No se puede eliminar mesa con pedidos activos"); return; }
+    if (m.pedidoActivoIds.length > 0) { setAlertTitle("Acción no permitida"); setAlertMsg("No se puede eliminar mesa con pedidos activos"); return; }
     setConfirmMesa(m);
   };
 
@@ -137,11 +138,11 @@ export default function MesasPage() {
       <ConfirmModal
         open={!!confirmMesa}
         onClose={() => setConfirmMesa(null)}
-        onConfirm={() => { if (confirmMesa) deleteMesa(confirmMesa.id); }}
+        onConfirm={() => { if (confirmMesa) { deleteMesa(confirmMesa.id); setAlertTitle("Listo"); setAlertMsg("Mesa eliminada correctamente"); } }}
         title={confirmMesa ? `Eliminar Mesa ${confirmMesa.numero}?` : "Eliminar mesa?"}
         description="Se eliminará la mesa y su QR. Esta acción no se puede deshacer."
       />
-      <AlertModal open={!!alertMsg} onClose={() => setAlertMsg(null)} title="Acción no permitida" description={alertMsg ?? ""} />
+      <AlertModal open={!!alertMsg} onClose={() => setAlertMsg(null)} title={alertTitle} description={alertMsg ?? ""} />
     </div>
   );
 }

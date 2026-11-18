@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea, Select, Label } from "@/components/ui/input";
 import { Producto, CategoriaProducto } from "@/types";
 import { useAuth } from "@/lib/auth";
-import { ConfirmModal } from "@/components/ui/modal";
+import { ConfirmModal, AlertModal } from "@/components/ui/modal";
 
 const CATEGORIAS: CategoriaProducto[] = ["papas", "hamburguesas", "perros", "salchipapas", "bebidas", "combos", "otros"];
 
@@ -60,6 +60,7 @@ export default function ProductosPage() {
   };
 
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const canEdit = user?.rol === "admin";
   const pendingDelete = confirmId ? productos.find((p) => p.id === confirmId) : null;
 
@@ -113,7 +114,7 @@ export default function ProductosPage() {
               <div className="md:col-span-2">
                 <Label>URL Imagen</Label>
                 <Input value={form.imagen} onChange={(e) => setForm({ ...form, imagen: e.target.value })} placeholder="https://..." />
-                <p className="text-xs text-zinc-400 mt-1">Vacío = placeholder. Luego Supabase Storage.</p>
+                <p className="text-xs text-zinc-400 mt-1">Vacío = imagen por defecto.</p>
               </div>
               <div className="md:col-span-2 flex gap-2">
                 <Button type="submit">{editing ? "Actualizar" : "Crear producto"}</Button>
@@ -152,12 +153,13 @@ export default function ProductosPage() {
       <ConfirmModal
         open={!!confirmId}
         onClose={() => setConfirmId(null)}
-        onConfirm={() => { if (confirmId) deleteProducto(confirmId); }}
+        onConfirm={() => { if (confirmId) { deleteProducto(confirmId); setSuccessMsg("Producto eliminado correctamente"); } }}
         title={`Eliminar ${pendingDelete?.nombre ?? "producto"}?`}
-        description="Esta acción no se puede deshacer. El producto se eliminará de la carta y de Supabase."
+        description="Esta acción no se puede deshacer. El producto se eliminará de la carta."
         confirmLabel="Sí, eliminar"
         cancelLabel="Cancelar"
       />
+      <AlertModal open={!!successMsg} onClose={() => setSuccessMsg(null)} title="Listo" description={successMsg ?? ""} />
     </div>
   );
 }
