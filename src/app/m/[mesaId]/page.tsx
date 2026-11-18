@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea, Label } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DetallePedido, EstadoPedido } from "@/types";
+import { AlertModal } from "@/components/ui/modal";
 
 export default function MesaPublicPage() {
   const params = useParams<{ mesaId: string }>();
@@ -16,6 +17,7 @@ export default function MesaPublicPage() {
   const [carrito, setCarrito] = useState<DetallePedido[]>([]);
   const [notas, setNotas] = useState("");
   const [ok, setOk] = useState<string | null>(null);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   const addToCart = (productoId: string) => {
     const p = productos.find((x) => x.id === productoId);
@@ -33,7 +35,7 @@ export default function MesaPublicPage() {
 
   const handlePedir = () => {
     if (!mesa) return;
-    if (carrito.length === 0) return alert("Agrega al menos 1 producto");
+    if (carrito.length === 0) { setAlertMsg("Agrega al menos 1 producto al carrito"); return; }
     const total = calcTotal(carrito);
     const pedidoId = uid("PED-");
     const ticketId = uid("TK-");
@@ -160,6 +162,7 @@ export default function MesaPublicPage() {
       </main>
 
       <footer className="p-6 text-center text-xs tracking-wide text-zinc-500">Gigi Papas — Comidas Rapidas</footer>
+      <AlertModal open={!!alertMsg} onClose={() => setAlertMsg(null)} title="Falta agregar productos" description={alertMsg ?? ""} />
     </div>
   );
 }

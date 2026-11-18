@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea, Select, Label } from "@/components/ui/input";
 import { Producto, CategoriaProducto } from "@/types";
 import { useAuth } from "@/lib/auth";
+import { ConfirmModal } from "@/components/ui/modal";
 
 const CATEGORIAS: CategoriaProducto[] = ["papas", "hamburguesas", "perros", "salchipapas", "bebidas", "combos", "otros"];
 
@@ -58,7 +59,9 @@ export default function ProductosPage() {
     setShowForm(true);
   };
 
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const canEdit = user?.rol === "admin";
+  const pendingDelete = confirmId ? productos.find((p) => p.id === confirmId) : null;
 
   return (
     <div className="space-y-4">
@@ -137,7 +140,7 @@ export default function ProductosPage() {
               {canEdit && (
                 <div className="mt-auto flex gap-2">
                   <Button size="sm" variant="outline" className="flex-1" onClick={() => handleEdit(p)}>Editar</Button>
-                  <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50 flex-1" onClick={() => { if (confirm(`Eliminar ${p.nombre}?`)) deleteProducto(p.id); }}>Eliminar</Button>
+                  <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50 flex-1" onClick={() => setConfirmId(p.id)}>Eliminar</Button>
                 </div>
               )}
             </CardContent>
@@ -146,6 +149,15 @@ export default function ProductosPage() {
       </div>
       {filtrados.length === 0 && <p className="text-center text-zinc-500 py-8">Sin resultados para &quot;{query}&quot;</p>}
       {!canEdit && <p className="text-xs text-center text-zinc-400">Solo rol <b>admin</b> puede crear/editar. Entra como admin@gigipapas.com</p>}
+      <ConfirmModal
+        open={!!confirmId}
+        onClose={() => setConfirmId(null)}
+        onConfirm={() => { if (confirmId) deleteProducto(confirmId); }}
+        title={`Eliminar ${pendingDelete?.nombre ?? "producto"}?`}
+        description="Esta acción no se puede deshacer. El producto se eliminará de la carta y de Supabase."
+        confirmLabel="Sí, eliminar"
+        cancelLabel="Cancelar"
+      />
     </div>
   );
 }

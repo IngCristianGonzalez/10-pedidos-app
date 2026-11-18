@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/utils";
 import { QRCodeSVG } from "qrcode.react";
 import { Input, Label, Select } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
+import { ConfirmModal, AlertModal } from "@/components/ui/modal";
 
 export default function MesasPage() {
   const { mesas, updateMesa, deleteMesa, addMesa, pedidos } = useStore();
@@ -18,6 +19,8 @@ export default function MesasPage() {
   const [capacidad, setCapacidad] = useState("4");
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
+  const [confirmMesa, setConfirmMesa] = useState<Mesa | null>(null);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   const handleToggle = (m: Mesa) => {
     const next = m.estado === "disponible" ? "ocupada" : m.estado === "ocupada" ? "reservada" : "disponible";
@@ -39,9 +42,8 @@ export default function MesasPage() {
   };
 
   const handleDelete = (m: Mesa) => {
-    if (m.pedidoActivoIds.length > 0) return alert("No se puede eliminar mesa con pedidos activos");
-    if (!confirm(`Eliminar Mesa ${m.numero}?`)) return;
-    deleteMesa(m.id);
+    if (m.pedidoActivoIds.length > 0) { setAlertMsg("No se puede eliminar mesa con pedidos activos"); return; }
+    setConfirmMesa(m);
   };
 
   return (
@@ -132,6 +134,14 @@ export default function MesasPage() {
           <p className="text-sm text-zinc-600 tracking-tight">Escanea el QR de la mesa para ver el menu y pedir directamente.</p>
         </CardContent>
       </Card>
+      <ConfirmModal
+        open={!!confirmMesa}
+        onClose={() => setConfirmMesa(null)}
+        onConfirm={() => { if (confirmMesa) deleteMesa(confirmMesa.id); }}
+        title={confirmMesa ? `Eliminar Mesa ${confirmMesa.numero}?` : "Eliminar mesa?"}
+        description="Se eliminará la mesa y su QR. Esta acción no se puede deshacer."
+      />
+      <AlertModal open={!!alertMsg} onClose={() => setAlertMsg(null)} title="Acción no permitida" description={alertMsg ?? ""} />
     </div>
   );
 }

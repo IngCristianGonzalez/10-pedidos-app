@@ -20,8 +20,14 @@ export const metadata: Metadata = {
   description: "Gigi Papas — Comidas Rápidas — Pedidos por mesa con QR",
   manifest: "/manifest.json",
   icons: {
-    icon: "/images/logo-gigi.jpeg",
-    apple: "/apple-icon.jpg",
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.jpg", sizes: "192x192", type: "image/jpeg" },
+      { url: "/images/logo-gigi.jpeg", sizes: "512x512", type: "image/jpeg" },
+    ],
+    apple: [{ url: "/apple-icon.jpg", sizes: "180x180", type: "image/jpeg" }],
+    shortcut: "/favicon.ico",
   },
   appleWebApp: { capable: true, title: "Gigi Papas", statusBarStyle: "black-translucent" },
 };

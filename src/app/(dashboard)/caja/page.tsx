@@ -10,6 +10,7 @@ import { ESTADOS_COLOR, ESTADOS_LABEL, MedioPago } from "@/types";
 import { TicketCocinaPrint } from "@/components/print/ticket-cocina";
 import { FacturaPrint } from "@/components/print/factura";
 import { printElement } from "@/lib/print";
+import { AlertModal } from "@/components/ui/modal";
 
 export default function CajaPage() {
   const { pedidos, updatePedido, ticketsCocina, updateTicketCocina, facturas, addFactura, liberarMesaSiVacia } = useStore();
@@ -18,6 +19,7 @@ export default function CajaPage() {
   const [efectivoRecibido, setEfectivoRecibido] = useState<number>(0);
   const [ticketCocinaId, setTicketCocinaId] = useState<string | null>(null);
   const [ultimaFacturaId, setUltimaFacturaId] = useState<string | null>(null);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const ticketRef = useRef<HTMLDivElement>(null);
 
   const filtrados = pedidos.filter((p) => !["pagado", "cancelado"].includes(p.estado));
@@ -28,7 +30,7 @@ export default function CajaPage() {
 
   const handleCobrar = () => {
     if (!selected) return;
-    if (medio === "efectivo" && efectivoRecibido < selected.total) return alert("Efectivo insuficiente");
+    if (medio === "efectivo" && efectivoRecibido < selected.total) { setAlertMsg("Efectivo insuficiente — el monto recibido es menor al total."); return; }
     const consecutivo = `FAC-${String(facturas.length + 1).padStart(6, "0")}`;
     const subtotal = Math.round(selected.total / 1.19);
     const ivaIncluido = selected.total - subtotal;
@@ -258,6 +260,7 @@ export default function CajaPage() {
           </div>
         </div>
       ) : null}
+      <AlertModal open={!!alertMsg} onClose={() => setAlertMsg(null)} title="No se puede cobrar" description={alertMsg ?? ""} />
     </div>
   );
 }

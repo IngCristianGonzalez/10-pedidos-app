@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label, Select } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DetallePedido, EstadoPedido, ESTADOS_COLOR, ESTADOS_LABEL } from "@/types";
+import { ConfirmModal, AlertModal } from "@/components/ui/modal";
 
 export default function PedidosPage() {
   const { productos, pedidos, mesas, addPedido, updatePedido, deletePedido, ocuparMesa, addTicketCocina } = useStore();
@@ -17,6 +18,8 @@ export default function PedidosPage() {
   const [carrito, setCarrito] = useState<DetallePedido[]>([]);
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [query, setQuery] = useState("");
+  const [confirmPedido, setConfirmPedido] = useState<string | null>(null);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   const addToCart = (productoId: string) => {
     const p = productos.find((x) => x.id === productoId);
@@ -34,7 +37,7 @@ export default function PedidosPage() {
   };
 
   const handleCrear = () => {
-    if (!mesa || carrito.length === 0) return alert("Mesa y al menos 1 producto");
+    if (!mesa || carrito.length === 0) { setAlertMsg("Selecciona una mesa y al menos 1 producto"); return; }
     const total = calcTotal(carrito);
     const mesaObj = mesas.find((m) => m.numero === mesa);
     const ticketId = uid("TK-");
@@ -217,13 +220,21 @@ export default function PedidosPage() {
                     {ESTADOS_LABEL[est]}
                   </button>
                 ))}
-                <Button size="sm" variant="ghost" className="text-red-600" onClick={() => { if (confirm("Eliminar?")) deletePedido(p.id); }}>Eliminar</Button>
+                <Button size="sm" variant="ghost" className="text-red-600" onClick={() => setConfirmPedido(p.id)}>Eliminar</Button>
               </div>
             </CardContent>
           </Card>
         ))}
         {pedidosFiltrados.length === 0 && <p className="text-center text-zinc-400 py-6">Sin pedidos con ese filtro</p>}
       </div>
+      <ConfirmModal
+        open={!!confirmPedido}
+        onClose={() => setConfirmPedido(null)}
+        onConfirm={() => { if (confirmPedido) deletePedido(confirmPedido); }}
+        title="¿Eliminar pedido?"
+        description="Esta acción eliminará el pedido y no se puede deshacer."
+      />
+      <AlertModal open={!!alertMsg} onClose={() => setAlertMsg(null)} title="Faltan datos" description={alertMsg ?? ""} />
     </div>
   );
 }
