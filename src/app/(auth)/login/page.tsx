@@ -37,7 +37,6 @@ export default function LoginPage() {
         <Card>
           <CardHeader>
             <h2 className="font-semibold tracking-tight text-lg">Iniciar sesion</h2>
-            <p className="text-sm text-zinc-500">Acceso por rol</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
@@ -54,7 +53,6 @@ export default function LoginPage() {
             </form>
 
             <div className="mt-6">
-              <p className="text-xs font-medium text-zinc-600 mb-2">Acceso por rol:</p>
               <div className="grid grid-cols-2 gap-2">
                 {USUARIOS_MOCK.map((u) => (
                   <button
