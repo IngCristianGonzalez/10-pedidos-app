@@ -13,6 +13,7 @@ const NAV: { href: string; label: string; roles: Rol[] }[] = [
   { href: "/caja", label: "Caja", roles: ["admin", "caja"] },
   { href: "/productos", label: "Productos", roles: ["admin"] },
   { href: "/reportes", label: "Reportes", roles: ["admin", "caja"] },
+  { href: "/cuenta", label: "Mi cuenta", roles: ["admin", "mesero", "cocina", "caja"] },
 ];
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
