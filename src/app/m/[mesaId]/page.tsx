@@ -120,36 +120,33 @@ export default function MesaPublicPage() {
         </div>
       )}
 
-      {pedidosMesa.length > 0 && (
+      {pedidoActivo && (
         <div className="max-w-6xl mx-auto px-4 mt-4">
           <Card className="border-[#FF6B00]/20 bg-orange-50/30">
             <CardHeader className="pb-2">
               <p className="font-bold tracking-tight">Estado de tu pedido Mesa {mesa.numero}</p>
-              <p className="text-xs text-zinc-500">Mesa {mesa.estado} • {pedidosMesa.length} pedido(s) en esta mesa</p>
+              <p className="text-xs text-zinc-500">Mesa {mesa.estado} • {formatDate(pedidoActivo.createdAt)}</p>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {pedidosMesa.slice(0, 3).map((p) => (
-                <div key={p.id} className="bg-white border rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-black text-sm">{p.id}</span>
-                      <Badge className={ESTADOS_COLOR[p.estado]}>{ESTADOS_LABEL[p.estado]}</Badge>
-                      <span className="text-xs bg-zinc-100 px-2 py-0.5 rounded-full">{formatDate(p.createdAt)}</span>
-                    </div>
-                    <p className="text-sm text-zinc-600 mt-1">{p.items.map((i) => `${i.cantidad}x ${i.nombre}`).join(" • ")}</p>
-                    <p className="text-xs text-zinc-400">{p.notas ? `Notas: ${p.notas} • ` : ""}{formatCOP(p.total)}</p>
+            <CardContent>
+              <div className="bg-white border rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-black text-sm">{pedidoActivo.id}</span>
+                    <Badge className={ESTADOS_COLOR[pedidoActivo.estado]}>{ESTADOS_LABEL[pedidoActivo.estado]}</Badge>
+                    <span className="text-xs bg-zinc-100 px-2 py-0.5 rounded-full">{formatCOP(pedidoActivo.total)}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {(["pendiente", "en_preparacion", "listo", "entregado"] as EstadoPedido[]).map((est, idx) => (
-                      <div key={est} className="flex items-center gap-1">
-                        <span className={`w-2 h-2 rounded-full ${p.estado === est ? "bg-[#FF6B00]" : ["pendiente", "en_preparacion", "listo", "entregado"].indexOf(p.estado) > idx ? "bg-emerald-400" : "bg-zinc-200"}`} />
-                        {idx < 3 && <span className="w-4 h-0.5 bg-zinc-200 hidden sm:block" />}
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-sm text-zinc-600 mt-1">{pedidoActivo.items.map((i) => `${i.cantidad}x ${i.nombre}`).join(" • ")}</p>
+                  {pedidoActivo.notas && <p className="text-xs text-zinc-400">Notas: {pedidoActivo.notas}</p>}
                 </div>
-              ))}
-              {pedidosMesa.length === 0 && <p className="text-sm text-zinc-400 text-center">Sin pedidos aún</p>}
+                <div className="flex items-center gap-1">
+                  {(["pendiente", "en_preparacion", "listo", "entregado"] as EstadoPedido[]).map((est, idx) => (
+                    <div key={est} className="flex items-center gap-1">
+                      <span className={`w-2 h-2 rounded-full ${pedidoActivo.estado === est ? "bg-[#FF6B00]" : ["pendiente", "en_preparacion", "listo", "entregado"].indexOf(pedidoActivo.estado) > idx ? "bg-emerald-400" : "bg-zinc-200"}`} />
+                      {idx < 3 && <span className="w-4 h-0.5 bg-zinc-200 hidden sm:block" />}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
