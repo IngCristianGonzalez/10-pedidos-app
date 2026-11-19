@@ -10,6 +10,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { Input, Label, Select } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
 import { ConfirmModal, AlertModal } from "@/components/ui/modal";
+import { QRMesaPrint } from "@/components/print/qr-mesa";
+import { printElement } from "@/lib/print";
 
 export default function MesasPage() {
   const { mesas, updateMesa, deleteMesa, addMesa, pedidos } = useStore();
@@ -117,6 +119,13 @@ export default function MesasPage() {
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" className="flex-1" onClick={() => handleToggle(m)}>Cambiar estado</Button>
                   <Button size="sm" variant="ghost" className="flex-1" onClick={() => navigator.clipboard?.writeText(`${typeof window !== "undefined" ? window.location.origin : ""}/m/${m.numero}`)}>Copiar link</Button>
+                </div>
+                <Button size="sm" variant="ghost" className="w-full border border-[#FF6B00]/20 hover:bg-orange-50" onClick={() => printElement(`print-qr-${m.numero}`)}>Imprimir QR con marca</Button>
+                <div className="hidden print:block">
+                  <QRMesaPrint numero={m.numero} url={`${typeof window !== "undefined" ? window.location.origin : ""}/m/${m.numero}`} />
+                </div>
+                <div id={`print-qr-${m.numero}`} className="hidden">
+                  <QRMesaPrint numero={m.numero} url={`${typeof window !== "undefined" ? window.location.origin : ""}/m/${m.numero}`} />
                 </div>
                 {isAdmin && (
                   <Button size="sm" variant="ghost" className="w-full text-red-600 hover:bg-red-50" onClick={() => handleDelete(m)} disabled={m.pedidoActivoIds.length > 0}>

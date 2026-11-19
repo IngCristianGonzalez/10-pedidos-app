@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertModal } from "@/components/ui/modal";
+import { useHorario, DIAS } from "@/lib/horario";
+import { Textarea } from "@/components/ui/input";
 
 export default function CuentaPage() {
   const { user, changePassword, is2FAEnabled, get2FASecret, setup2FA, confirm2FA, disable2FA } = useAuth();
@@ -66,6 +68,10 @@ export default function CuentaPage() {
     disable2FA();
     setMsg({ title: "2FA desactivado", desc: "Se deshabilitó la verificación en dos pasos." });
   };
+
+  const horario = useHorario();
+  const [localHorarios, setLocalHorarios] = useState(horario.horarios);
+  useEffect(() => { setLocalHorarios(horario.horarios); }, [horario.horarios]);
 
   if (!user) return <p className="p-8 text-center">Cargando...</p>;
 
@@ -171,6 +177,48 @@ export default function CuentaPage() {
         <Card className="bg-zinc-50 border-dashed">
           <CardContent className="pt-6">
             <p className="text-sm text-zinc-500 text-center">La autenticación en dos pasos está disponible solo para el rol <b>admin</b>.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {user.rol === "admin" && (
+        <Card className="border-orange-200 bg-orange-50/30">
+          <CardHeader>
+            <p className="font-black">Horarios de atención</p>
+            <p className="text-sm text-zinc-500">Solo admin. Define cuándo el local está abierto. Si está cerrado se muestra cartel con contador y ver menú abajo.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" checked={horario.cerradoTemporal} onChange={(e) => horario.setCerradoTemporal(e.target.checked)} />
+              Cerrado temporalmente
+            </label>
+            {horario.cerradoTemporal && (
+              <div>
+                <Label>Mensaje cerrado temporal</Label>
+                <Textarea value={horario.mensajeCerrado} onChange={(e) => horario.setMensajeCerrado(e.target.value)} rows={2} />
+              </div>
+            )}
+            <div className="space-y-2">
+              {localHorarios.map((h) => (
+                <div key={h.dia} className="flex items-center gap-2 bg-white border rounded-xl p-2">
+                  <input type="checkbox" checked={h.activo} onChange={(e) => {
+                    const next = localHorarios.map((x) => x.dia === h.dia ? { ...x, activo: e.target.checked } : x);
+                    setLocalHorarios(next);
+                  }} />
+                  <span className="w-20 text-sm font-medium">{DIAS[h.dia].slice(0, 3)}</span>
+                  <Input type="time" value={h.abre} onChange={(e) => {
+                    const next = localHorarios.map((x) => x.dia === h.dia ? { ...x, abre: e.target.value } : x);
+                    setLocalHorarios(next);
+                  }} className="h-8" />
+                  <span className="text-xs">a</span>
+                  <Input type="time" value={h.cierra} onChange={(e) => {
+                    const next = localHorarios.map((x) => x.dia === h.dia ? { ...x, cierra: e.target.value } : x);
+                    setLocalHorarios(next);
+                  }} className="h-8" />
+                </div>
+              ))}
+            </div>
+            <Button onClick={() => { horario.updateHorarios(localHorarios); setMsg({ title: "Horarios guardados", desc: "Se actualizaron los horarios. El cartel de cerrado se mostrará según corresponda." }); }} className="w-full">Guardar horarios</Button>
           </CardContent>
         </Card>
       )}

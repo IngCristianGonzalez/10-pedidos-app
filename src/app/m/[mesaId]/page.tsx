@@ -6,22 +6,26 @@ import { formatCOP, uid } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea, Label } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { DetallePedido, EstadoPedido, ESTADOS_COLOR, ESTADOS_LABEL } from "@/types";
+import { DetallePedido, EstadoPedido, ESTADOS_COLOR, ESTADOS_LABEL, CategoriaProducto } from "@/types";
 import { AlertModal } from "@/components/ui/modal";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
+import { HorarioBanner } from "@/components/horario-banner";
+import { useHorario } from "@/lib/horario";
 
 export default function MesaPublicPage() {
   const params = useParams<{ mesaId: string }>();
   const idOrNumero = decodeURIComponent(params.mesaId || "");
   const { mesas, productos, pedidos, addPedido, ocuparMesa, addTicketCocina } = useStore();
-  const mesa = mesas.find((m) => m.numero === idOrNumero || m.id === idOrNumero);
-  const pedidosMesa = mesa ? pedidos.filter((p) => p.mesa === mesa.numero || p.mesaId === mesa.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) : [];
-  const pedidoActivo = pedidosMesa.find((p) => !["pagado", "cancelado"].includes(p.estado));
+  const { isOpen } = useHorario();
   const [carrito, setCarrito] = useState<DetallePedido[]>([]);
   const [notas, setNotas] = useState("");
   const [ok, setOk] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [catActiva, setCatActiva] = useState<string>("todas");
+  const mesa = mesas.find((m) => m.numero === idOrNumero || m.id === idOrNumero);
+  const pedidosMesa = mesa ? pedidos.filter((p) => p.mesa === mesa.numero || p.mesaId === mesa.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) : [];
+  const pedidoActivo = pedidosMesa.find((p) => !["pagado", "cancelado"].includes(p.estado));
 
   const addToCart = (productoId: string) => {
     const p = productos.find((x) => x.id === productoId);
@@ -94,9 +98,12 @@ export default function MesaPublicPage() {
 
   const disponibles = productos.filter((p) => p.disponible);
   const totalCarrito = calcTotal(carrito);
+  const categorias: CategoriaProducto[] = ["papas", "hamburguesas", "perros", "salchipapas", "bebidas", "combos", "otros"];
+  const productosFiltrados = catActiva === "todas" ? disponibles : disponibles.filter((p) => p.categoria === catActiva);
 
   return (
     <div className="min-h-screen bg-[#fbfbfd]">
+      <HorarioBanner />
       <header className="sticky top-0 z-20 material border-b border-black/[0.06] px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -152,26 +159,52 @@ export default function MesaPublicPage() {
         </div>
       )}
 
+      <div id="menu" className="scroll-mt-28" />
       <main className="max-w-6xl mx-auto p-4 grid lg:grid-cols-[1.4fr_0.9fr] gap-6">
-        <Card>
-          <CardHeader><p className="font-semibold tracking-tight">Menu</p><p className="text-xs text-zinc-500 tabular-nums">{disponibles.length} disponibles</p></CardHeader>
-          <CardContent>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {disponibles.map((p) => (
-                <button key={p.id} onClick={() => addToCart(p.id)} className="text-left border border-black/[0.06] rounded-2xl p-3 hover:border-[#FF6B00]/40 hover:bg-orange-50/50 transition flex gap-3 active:scale-[0.98]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.imagen} alt={p.nombre} className="w-16 h-16 rounded-xl object-cover" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm tracking-tight truncate">{p.nombre}</p>
-                    <p className="text-xs text-zinc-500 line-clamp-1">{p.descripcion}</p>
-                    <p className="font-semibold text-[#FF6B00] text-sm mt-1">{formatCOP(p.precio)}</p>
-                  </div>
-                  <span className="text-[#FF6B00] font-semibold">+</span>
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none">
+            <button onClick={() => setCatActiva("todas")} className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold border ${catActiva === "todas" ? "bg-[#FF6B00] text-white border-[#FF6B00]" : "bg-white border-black/10 hover:bg-zinc-50"}`}>Todas</button>
+            {categorias.map((cat) => (
+              <button key={cat} onClick={() => setCatActiva(cat)} className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold border capitalize ${catActiva === cat ? "bg-[#FF6B00] text-white border-[#FF6B00]" : "bg-white border-black/10 hover:bg-zinc-50"}`}>{cat}</button>
+            ))}
+          </div>
+
+          {categorias.filter((cat) => catActiva === "todas" ? productosFiltrados.some((p) => p.categoria === cat) : cat === catActiva).map((cat) => {
+            const items = productosFiltrados.filter((p) => p.categoria === cat);
+            if (items.length === 0) return null;
+            return (
+              <div key={cat} id={`cat-${cat}`} className="scroll-mt-28">
+                <div className="flex items-baseline gap-2 mb-3">
+                  <h2 className="text-lg font-black capitalize tracking-tight">{cat}</h2>
+                  <span className="text-xs bg-zinc-100 px-2 py-0.5 rounded-full">{items.length} opciones</span>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {items.map((p) => (
+                    <div key={p.id} className="group flex min-w-0 gap-3 rounded-2xl border bg-white p-3 sm:gap-4 sm:p-4 hover:border-[#FF6B00]/30 transition">
+                      <button onClick={() => isOpen && addToCart(p.id)} disabled={!isOpen} className="relative size-24 min-[400px]:size-28 sm:size-36 shrink-0 overflow-hidden rounded-xl border bg-zinc-50 disabled:opacity-60">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.imagen} alt={p.nombre} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      </button>
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <p className="font-semibold leading-tight line-clamp-1">{p.nombre}</p>
+                        <p className="mt-1 line-clamp-2 text-xs text-zinc-500">{p.descripcion}</p>
+                        <div className="mt-auto flex justify-between items-end pt-3">
+                          <span className="text-lg font-black text-[#FF6B00]">{formatCOP(p.precio)}</span>
+                          {isOpen ? (
+                            <button onClick={() => addToCart(p.id)} className="rounded-full bg-[#FF6B00] px-4 py-2 text-xs font-black text-white hover:bg-[#E55F00]">Agregar</button>
+                          ) : (
+                            <span className="rounded-full border bg-zinc-100 px-4 py-2 text-xs font-bold text-zinc-500">Cerrado</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          {productosFiltrados.length === 0 && <p className="text-center text-zinc-400 py-8">Sin productos en {catActiva}</p>}
+        </div>
 
         <Card className="border-[#FF6B00]/20 h-fit sticky top-[68px]">
           <CardHeader><p className="font-semibold tracking-tight">Tu pedido Mesa {mesa.numero}</p></CardHeader>
