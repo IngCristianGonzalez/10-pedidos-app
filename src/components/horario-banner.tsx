@@ -61,7 +61,6 @@ export function HorarioBanner() {
           )}
           <p className="text-xs text-zinc-400 mt-4">{horarioResumen(horarios)}</p>
           <button onClick={() => { setDismissed(true); setTimeout(() => document.getElementById("menu")?.scrollIntoView({ behavior: "smooth" }), 100); }} className="inline-block mt-5 bg-[#FF6B00] text-white px-6 py-2.5 rounded-full font-bold hover:bg-[#E55F00] transition w-full">Ver menú abajo</button>
-          <button onClick={() => setDismissed(true)} className="mt-2 text-xs text-zinc-500 hover:text-zinc-700">Cerrar y ver fondo difuminado</button>
         </div>
       </div>
     </div>
