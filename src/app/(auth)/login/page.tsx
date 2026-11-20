@@ -5,6 +5,7 @@ import { useAuth, USUARIOS_MOCK } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { HorarioBanner } from "@/components/horario-banner";
 
 export default function LoginPage() {
   const { login, loginAs, pending2FA, verify2FAAndLogin } = useAuth();
@@ -37,7 +38,9 @@ export default function LoginPage() {
 
   if (pending2FA) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-4">
+      <div className="min-h-screen bg-black flex flex-col">
+        <HorarioBanner />
+        <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-6">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -64,13 +67,16 @@ export default function LoginPage() {
             </CardContent>
           </Card>
         </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-black flex flex-col">
+      <HorarioBanner />
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
         <div className="text-center mb-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/logo-gigi.jpeg" alt="Gigi Papas" className="w-20 h-20 mx-auto rounded-full border-4 border-white object-cover" />
@@ -113,6 +119,7 @@ export default function LoginPage() {
             <p className="text-xs text-center text-zinc-400 mt-4">Gigi Papas Comidas Rapidas</p>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

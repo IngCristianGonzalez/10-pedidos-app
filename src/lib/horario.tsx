@@ -81,29 +81,44 @@ type Ctx = HorarioConfig & {
 const HorarioCtx = createContext<Ctx | null>(null);
 
 export function HorarioProvider({ children }: { children: React.ReactNode }) {
-  const [cfg, setCfg] = useState<HorarioConfig>({ horarios: DEFAULT_HORARIO, cerradoTemporal: false, mensajeCerrado: "Estamos cerrados temporalmente. Vuelve pronto." });
+  const [cfg, setCfg] = useState<HorarioConfig>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem(STORAGE_HORARIO);
+        if (raw) return JSON.parse(raw);
+      } catch {}
+    }
+    return { horarios: DEFAULT_HORARIO, cerradoTemporal: false, mensajeCerrado: "Estamos cerrados temporalmente. Vuelve pronto." };
+  });
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
+    // re-sync after mount (por si se cambió en otra pestaña)
     setCfg(load());
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
   const updateHorarios = (h: DiaHorario[]) => {
-    const next = { ...cfg, horarios: h };
-    setCfg(next);
-    save(next);
+    setCfg((prev) => {
+      const next = { ...prev, horarios: h };
+      save(next);
+      return next;
+    });
   };
   const setCerradoTemporal = (v: boolean) => {
-    const next = { ...cfg, cerradoTemporal: v };
-    setCfg(next);
-    save(next);
+    setCfg((prev) => {
+      const next = { ...prev, cerradoTemporal: v };
+      save(next);
+      return next;
+    });
   };
   const setMensajeCerrado = (s: string) => {
-    const next = { ...cfg, mensajeCerrado: s };
-    setCfg(next);
-    save(next);
+    setCfg((prev) => {
+      const next = { ...prev, mensajeCerrado: s };
+      save(next);
+      return next;
+    });
   };
 
   return (
