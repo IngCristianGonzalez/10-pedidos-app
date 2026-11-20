@@ -6,7 +6,7 @@ services:
     region: oregon # cambia a virginia si prefieres
     branch: main
     buildCommand: npm ci && npm run build
-    startCommand: npm start
+    startCommand: node build/standalone/server.js
     healthCheckPath: /
     envVars:
       - key: NODE_VERSION
