@@ -24,6 +24,9 @@ export default function MesasPage() {
   const [confirmMesa, setConfirmMesa] = useState<Mesa | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [alertTitle, setAlertTitle] = useState("Acción no permitida");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggleSelect = (id: string) => setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const selectedMesas = mesas.filter((m) => selected.has(m.id));
 
   const handleToggle = (m: Mesa) => {
     const next = m.estado === "disponible" ? "ocupada" : m.estado === "ocupada" ? "reservada" : "disponible";
@@ -61,7 +64,11 @@ export default function MesasPage() {
           <span className="text-xs bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full tabular-nums">{mesas.filter((m) => m.estado === "disponible").length} disponibles</span>
           <span className="text-xs bg-orange-50 border border-orange-200 px-3 py-1.5 rounded-full tabular-nums">{mesas.filter((m) => m.estado === "ocupada").length} ocupadas</span>
           {isAdmin && <Button size="sm" onClick={() => setShowForm(!showForm)}>{showForm ? "Cerrar" : "+ Nueva mesa"}</Button>}
+          <Button size="sm" variant="outline" onClick={() => setSelected(new Set(mesas.map((m) => m.id)))}>Seleccionar todas</Button>
+          <Button size="sm" variant="outline" onClick={() => setSelected(new Set())}>Limpiar</Button>
+          <Button size="sm" disabled={selected.size === 0} onClick={() => printElement("print-qr-batch")}>Imprimir {selected.size > 0 ? `${selected.size} QR` : "varios QR"}</Button>
         </div>
+        {selected.size > 0 && <p className="text-xs text-zinc-500 text-right w-full">{selected.size} seleccionada(s) para impresión</p>}
       </div>
 
       {isAdmin && showForm && (
@@ -92,9 +99,12 @@ export default function MesasPage() {
         {mesas.map((m) => {
           const activos = pedidos.filter((p) => m.pedidoActivoIds.includes(p.id));
           return (
-            <Card key={m.id} className="overflow-hidden">
+            <Card key={m.id} className={`overflow-hidden ${selected.has(m.id) ? "ring-2 ring-[#FF6B00]" : ""}`}>
               <CardHeader className="flex flex-row justify-between items-center">
-                <p className="font-semibold tracking-tight text-lg">Mesa {m.numero}</p>
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggleSelect(m.id)} className="accent-[#FF6B00]" />
+                  <p className="font-semibold tracking-tight text-lg">Mesa {m.numero}</p>
+                </label>
                 <Badge className={ESTADOS_MESA_COLOR[m.estado]}>{ESTADOS_MESA_LABEL[m.estado]}</Badge>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -139,9 +149,20 @@ export default function MesasPage() {
         })}
       </div>
 
+      {/* batch print hidden */}
+      <div id="print-qr-batch" className="hidden">
+        <div className="grid grid-cols-2 gap-4 p-4">
+          {selectedMesas.length > 0 ? selectedMesas.map((m) => (
+            <div key={m.id} className="break-inside-avoid border p-2">
+              <QRMesaPrint numero={m.numero} url={`${typeof window !== "undefined" ? window.location.origin : ""}/m/${m.numero}`} />
+            </div>
+          )) : <p className="text-sm text-zinc-500">Selecciona mesas para imprimir</p>}
+        </div>
+      </div>
+
       <Card className="border-[#FF6B00]/20 bg-orange-50/50">
         <CardContent className="pt-4">
-          <p className="text-sm text-zinc-600 tracking-tight">Escanea el QR de la mesa para ver el menu y pedir directamente.</p>
+          <p className="text-sm text-zinc-600 tracking-tight">Escanea el QR de la mesa para ver el menu y pedir directamente. Selecciona varias y usa Imprimir varios QR.</p>
         </CardContent>
       </Card>
       <ConfirmModal
