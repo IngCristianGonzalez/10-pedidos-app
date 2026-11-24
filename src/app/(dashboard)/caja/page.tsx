@@ -23,6 +23,7 @@ export default function CajaPage() {
   const [ticketCocinaId, setTicketCocinaId] = useState<string | null>(null);
   const [ultimaFacturaId, setUltimaFacturaId] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [qrOk, setQrOk] = useState(true);
   const ticketRef = useRef<HTMLDivElement>(null);
 
   const filtrados = pedidos.filter((p) => !["pagado", "cancelado"].includes(p.estado));
@@ -239,16 +240,18 @@ export default function CajaPage() {
                     {medio === "transferencia" && (
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm space-y-2">
                         <p className="font-bold">Transferencia {datosTransf?.titular || "Gigi Papas"}</p>
-                        {datosTransf?.qrImage && (
+                        {datosTransf?.qrImage && qrOk ? (
                           <div className="flex justify-center">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={datosTransf.qrImage}
                               alt="QR Nequi"
                               className="w-40 h-40 object-contain rounded-xl border bg-white"
-                              onError={(e) => { e.currentTarget.style.display = "none"; }}
+                              onError={() => setQrOk(false)}
                             />
                           </div>
+                        ) : (
+                          <p className="text-xs text-center text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">📷 QR aún no cargado — sube la imagen en Cuenta → Datos transferencia</p>
                         )}
                         <p className="text-xs text-zinc-600">Nequi {datosTransf?.nequi || "3023860980"} • confirmar comprobante antes de cobrar</p>
                       </div>

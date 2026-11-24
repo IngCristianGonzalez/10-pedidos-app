@@ -33,6 +33,7 @@ export default function MesaPublicPage() {
   const NEQUI_DINAMICO = process.env.NEXT_PUBLIC_NEQUI_DYNAMIC_QR === "1";
   const [modoManual, setModoManual] = useState(false);
   const [qrDyn, setQrDyn] = useState<{ qrValue: string; transactionId: string } | null>(null);
+  const [qrStaticOk, setQrStaticOk] = useState(true);
   const [qrEstado, setQrEstado] = useState<"idle" | "generando" | "pendiente" | "aprobado" | "expirado" | "rechazado" | "fallido" | "error">("idle");
   const [qrError, setQrError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -262,7 +263,7 @@ export default function MesaPublicPage() {
               {pedidoActivo.estado === "pendiente" && (
                 <div className="mt-3">
                   {!showPago ? (
-                    <Button className="w-full" variant="outline" onClick={() => { setShowPago(true); setModoManual(false); }}>
+                    <Button className="w-full" variant="outline" onClick={() => { setShowPago(true); setModoManual(false); setQrStaticOk(true); }}>
                       💳 Pagar por transferencia ({formatCOP(pedidoActivo.total)})
                     </Button>
                   ) : NEQUI_DINAMICO && !modoManual ? (
@@ -310,15 +311,19 @@ export default function MesaPublicPage() {
                   ) : (
                     <div className="bg-white border border-blue-200 rounded-xl p-3 space-y-2">
                       <p className="font-bold text-sm">Transferencia {datosTransf.titular}</p>
-                      {datosTransf.qrImage && (
+                      {datosTransf.qrImage && qrStaticOk ? (
                         <div className="flex justify-center">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={datosTransf.qrImage}
                             alt="QR Nequi Gigi Papas"
                             className="w-48 h-48 object-contain rounded-xl border bg-white"
-                            onError={(e) => { e.currentTarget.style.display = "none"; }}
+                            onError={() => setQrStaticOk(false)}
                           />
+                        </div>
+                      ) : (
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
+                          📷 QR en camino — mientras tanto transfiere al Nequi <b>{datosTransf.nequi}</b> el valor exacto.
                         </div>
                       )}
                       <p className="text-xs text-center text-zinc-500">Escanea para pagar {formatCOP(pedidoActivo.total)}</p>
