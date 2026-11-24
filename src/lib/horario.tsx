@@ -1,5 +1,6 @@
 "use client";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { getSupabase, isSupabaseConfigured } from "./supabase";
 
 export type DiaHorario = { dia: number; abre: string; cierra: string; activo: boolean }; // dia 0=Dom
 const STORAGE_HORARIO = "gigi_horario";
@@ -16,15 +17,55 @@ const DEFAULT_HORARIO: DiaHorario[] = [
 
 type HorarioConfig = { horarios: DiaHorario[]; cerradoTemporal: boolean; mensajeCerrado: string };
 
-function load(): HorarioConfig {
-  try {
-    const raw = localStorage.getItem(STORAGE_HORARIO);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return { horarios: DEFAULT_HORARIO, cerradoTemporal: false, mensajeCerrado: "Estamos cerrados temporalmente. Vuelve pronto." };
-}
 function save(cfg: HorarioConfig) {
-  localStorage.setItem(STORAGE_HORARIO, JSON.stringify(cfg));
+  try {
+    localStorage.setItem(STORAGE_HORARIO, JSON.stringify(cfg));
+  } catch {}
+}
+
+// Config compartida en Supabase (todos los dispositivos). Fallback: localStorage.
+async function loadShared(): Promise<HorarioConfig | null> {
+  try {
+    const sb = getSupabase();
+    if (!sb || !isSupabaseConfigured) return null;
+    const { data, error } = await sb.from("negocio_horario").select("*").eq("id", "gigi").single();
+    if (error || !data) return null;
+    const row = data as { horarios: unknown; cerrado_temporal: boolean | null; mensaje_cerrado: string | null };
+    if (!Array.isArray(row.horarios)) return null;
+    return {
+      horarios: row.horarios as DiaHorario[],
+      cerradoTemporal: !!row.cerrado_temporal,
+      mensajeCerrado: row.mensaje_cerrado ?? "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveShared(cfg: HorarioConfig) {
+  try {
+    const sb = getSupabase();
+    if (!sb || !isSupabaseConfigured) return;
+    void (sb.from("negocio_horario") as unknown as {
+      upsert: (v: Record<string, unknown>) => PromiseLike<unknown>;
+    })
+      .upsert({
+        id: "gigi",
+        horarios: cfg.horarios,
+        cerrado_temporal: cfg.cerradoTemporal,
+        mensaje_cerrado: cfg.mensajeCerrado,
+        updated_at: new Date().toISOString(),
+      })
+      .then(
+        (res) => {
+          const r = res as { error?: { message?: string } | null };
+          if (r?.error) console.error("[Supabase] negocio_horario:", r.error.message);
+        },
+        (e) => console.error("[Supabase] negocio_horario:", e)
+      );
+  } catch (e) {
+    console.error("[Supabase] negocio_horario:", e);
+  }
 }
 
 export function isOpenNow(cfg: HorarioConfig, now = new Date()): boolean {
@@ -101,34 +142,43 @@ export function HorarioProvider({ children }: { children: React.ReactNode }) {
     return { horarios: DEFAULT_HORARIO, cerradoTemporal: false, mensajeCerrado: "Estamos cerrados temporalmente. Vuelve pronto." };
   });
   const [now, setNow] = useState(new Date());
+  const cfgRef = useRef(cfg);
+  cfgRef.current = cfg;
 
-  useEffect(() => {
-    // re-sync after mount (por si se cambió en otra pestaña)
-    setCfg(load());
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
+  // Sincroniza con Supabase (fuente compartida). Solo aplica si cambió,
+  // para no pisar ediciones en curso.
+  const syncShared = useCallback(async () => {
+    const shared = await loadShared();
+    if (shared && JSON.stringify(shared) !== JSON.stringify(cfgRef.current)) {
+      save(shared);
+      setCfg(shared);
+    }
   }, []);
 
+  useEffect(() => {
+    syncShared();
+    const id = setInterval(() => setNow(new Date()), 1000);
+    const idSync = setInterval(syncShared, 30000);
+    return () => {
+      clearInterval(id);
+      clearInterval(idSync);
+    };
+  }, [syncShared]);
+
+  const persist = (next: HorarioConfig) => {
+    setCfg(next);
+    save(next);
+    saveShared(next);
+  };
+
   const updateHorarios = (h: DiaHorario[]) => {
-    setCfg((prev) => {
-      const next = { ...prev, horarios: h };
-      save(next);
-      return next;
-    });
+    persist({ ...cfgRef.current, horarios: h });
   };
   const setCerradoTemporal = (v: boolean) => {
-    setCfg((prev) => {
-      const next = { ...prev, cerradoTemporal: v };
-      save(next);
-      return next;
-    });
+    persist({ ...cfgRef.current, cerradoTemporal: v });
   };
   const setMensajeCerrado = (s: string) => {
-    setCfg((prev) => {
-      const next = { ...prev, mensajeCerrado: s };
-      save(next);
-      return next;
-    });
+    persist({ ...cfgRef.current, mensajeCerrado: s });
   };
 
   return (

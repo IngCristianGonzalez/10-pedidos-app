@@ -100,3 +100,18 @@ insert into mesas (id, numero, estado, capacidad) values
 ('m2','2','disponible',4),
 ('m3','3','disponible',6)
 on conflict (id) do nothing;
+
+-- Horario compartido del negocio (lo edita el admin en Cuenta, lo ven todos los dispositivos)
+create table if not exists negocio_horario (
+  id text primary key,
+  horarios jsonb not null,
+  cerrado_temporal boolean not null default false,
+  mensaje_cerrado text not null default '',
+  updated_at timestamptz default now()
+);
+alter table negocio_horario disable row level security;
+insert into negocio_horario (id, horarios, cerrado_temporal, mensaje_cerrado)
+values ('gigi',
+  '[{"dia":0,"abre":"18:00","cierra":"23:00","activo":true},{"dia":1,"abre":"18:00","cierra":"23:00","activo":false},{"dia":2,"abre":"18:00","cierra":"23:00","activo":false},{"dia":3,"abre":"18:00","cierra":"23:00","activo":false},{"dia":4,"abre":"18:00","cierra":"23:00","activo":false},{"dia":5,"abre":"18:00","cierra":"22:30","activo":true},{"dia":6,"abre":"18:00","cierra":"23:00","activo":true}]'::jsonb,
+  false, 'Estamos cerrados temporalmente. Vuelve pronto.')
+on conflict (id) do nothing;
