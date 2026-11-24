@@ -249,6 +249,47 @@ export default function CuentaPage() {
               </div>
             </div>
             <div>
+              <Label>QR Nequi del negocio</Label>
+              {datosT.qrImage && (
+                <div className="flex justify-center py-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={datosT.qrImage}
+                    alt="QR Nequi actual"
+                    className="w-40 h-40 object-contain rounded-xl border bg-white"
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
+                </div>
+              )}
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const img = new Image();
+                    img.onload = () => {
+                      const max = 640;
+                      const scale = Math.min(1, max / Math.max(img.width, img.height));
+                      const c = document.createElement("canvas");
+                      c.width = Math.round(img.width * scale);
+                      c.height = Math.round(img.height * scale);
+                      c.getContext("2d")?.drawImage(img, 0, 0, c.width, c.height);
+                      setDatosT({ ...datosT, qrImage: c.toDataURL("image/jpeg", 0.85) });
+                    };
+                    img.src = reader.result as string;
+                  };
+                  reader.readAsDataURL(f);
+                }}
+              />
+              <p className="text-xs text-zinc-400 mt-1">Sube la imagen del QR de Nequi. Se muestra al cliente para escanear y pagar.</p>
+              {datosT.qrImage.startsWith("data:") && (
+                <Button variant="ghost" size="sm" className="mt-1" onClick={() => setDatosT({ ...datosT, qrImage: "/images/nequi-qr.jpeg" })}>Quitar imagen subida (volver a la del repo)</Button>
+              )}
+            </div>
+            <div>
               <Label>Mensaje al cliente</Label>
               <Textarea value={datosT.mensaje} onChange={(e) => setDatosT({ ...datosT, mensaje: e.target.value })} rows={2} />
             </div>

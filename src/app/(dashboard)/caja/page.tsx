@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { formatCOP, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,12 @@ import { TicketCocinaPrint } from "@/components/print/ticket-cocina";
 import { FacturaPrint } from "@/components/print/factura";
 import { printElement } from "@/lib/print";
 import { AlertModal } from "@/components/ui/modal";
+import { getDatosTransferencia, type DatosTransferencia } from "@/lib/transferencia";
 
 export default function CajaPage() {
   const { pedidos, updatePedido, ticketsCocina, updateTicketCocina, facturas, addFactura, liberarMesaSiVacia } = useStore();
+  const [datosTransf, setDatosTransf] = useState<DatosTransferencia | null>(null);
+  useEffect(() => { setDatosTransf(getDatosTransferencia()); }, []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [medio, setMedio] = useState<MedioPago>("efectivo");
   const [efectivoRecibido, setEfectivoRecibido] = useState<number>(0);
@@ -234,9 +237,20 @@ export default function CajaPage() {
                     )}
 
                     {medio === "transferencia" && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
-                        <p className="font-bold">Transferencia Gigi Papas</p>
-                        <p className="text-xs text-zinc-600">Nequi / Bancolombia confirmar comprobante antes de cobrar</p>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm space-y-2">
+                        <p className="font-bold">Transferencia {datosTransf?.titular || "Gigi Papas"}</p>
+                        {datosTransf?.qrImage && (
+                          <div className="flex justify-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={datosTransf.qrImage}
+                              alt="QR Nequi"
+                              className="w-40 h-40 object-contain rounded-xl border bg-white"
+                              onError={(e) => { e.currentTarget.style.display = "none"; }}
+                            />
+                          </div>
+                        )}
+                        <p className="text-xs text-zinc-600">Nequi {datosTransf?.nequi || "3023860980"} • confirmar comprobante antes de cobrar</p>
                       </div>
                     )}
                   </>
