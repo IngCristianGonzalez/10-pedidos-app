@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useHorario, formatCountdown, horarioResumen } from "@/lib/horario";
+import { useHorario, countdownParts, horarioResumen } from "@/lib/horario";
 
 export function HorarioBanner() {
   const { isOpen, nextOpen, horarios, cerradoTemporal, mensajeCerrado } = useHorario();
@@ -23,7 +23,8 @@ export function HorarioBanner() {
   }
 
   const target = nextOpen;
-  const countdown = target ? formatCountdown(target, now) : "";
+  const parts = target ? countdownParts(target, now) : null;
+  const pad2 = (n: number) => String(n).padStart(2, "0");
   const diaStr = target ? target.toLocaleDateString("es-CO", { weekday: "long", hour: "2-digit", minute: "2-digit" }) : "";
 
   if (dismissed) {
@@ -53,10 +54,22 @@ export function HorarioBanner() {
         <div className="px-6 pt-6 pb-6">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-[#0A0A0A]">Estamos cerrados</h2>
           <p className="text-sm text-zinc-600 mt-2">{cerradoTemporal ? mensajeCerrado : `Nuestro horario de atención comienza el ${diaStr}.`}</p>
-          {target && (
-            <div className="mt-4 inline-flex flex-col items-center bg-black rounded-2xl px-6 py-3 w-full">
+          {parts && (
+            <div className="mt-4 bg-black rounded-2xl px-4 py-3 w-full">
               <span className="text-xs tracking-widest text-white/60">ABRIMOS EN</span>
-              <span className="font-mono font-black text-2xl tracking-widest text-[#FF6B00]">{countdown}</span>
+              <div className="flex justify-center gap-2 mt-1">
+                {[
+                  { v: String(parts.d), l: "DÍAS" },
+                  { v: pad2(parts.h), l: "HORAS" },
+                  { v: pad2(parts.m), l: "MIN" },
+                  { v: pad2(parts.s), l: "SEG" },
+                ].map((b) => (
+                  <div key={b.l} className="bg-white/10 rounded-xl px-2.5 py-1.5 min-w-[56px]">
+                    <p className="font-mono font-black text-xl tabular-nums text-[#FF6B00]">{b.v}</p>
+                    <p className="text-[10px] tracking-widest text-white/50">{b.l}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           <p className="text-xs text-zinc-400 mt-4">{horarioResumen(horarios)}</p>

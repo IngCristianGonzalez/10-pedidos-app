@@ -61,12 +61,22 @@ export function nextOpening(cfg: HorarioConfig, now = new Date()): Date | null {
   return null;
 }
 
-export function formatCountdown(target: Date, now = new Date()): string {
+export function countdownParts(target: Date, now = new Date()): { d: number; h: number; m: number; s: number } {
   const diff = Math.max(0, +target - +now);
-  const h = Math.floor(diff / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  const s = Math.floor((diff % 60000) / 1000);
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return {
+    d: Math.floor(diff / 86400000),
+    h: Math.floor((diff % 86400000) / 3600000),
+    m: Math.floor((diff % 3600000) / 60000),
+    s: Math.floor((diff % 60000) / 1000),
+  };
+}
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+export function formatCountdown(target: Date, now = new Date()): string {
+  const { d, h, m, s } = countdownParts(target, now);
+  const hhmmss = `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+  return d > 0 ? `${d}d ${hhmmss}` : hhmmss;
 }
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
