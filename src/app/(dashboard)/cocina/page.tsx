@@ -7,7 +7,7 @@ import { formatDate } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
 export default function CocinaPage() {
-  const { pedidos, updatePedido } = useStore();
+  const { pedidos, avanzarPedido } = useStore();
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -61,7 +61,7 @@ export default function CocinaPage() {
           <h2 className="font-semibold tracking-tight flex items-center gap-2">Pendientes <span className="bg-[#1d1d1f] text-white text-xs px-2 py-0.5 rounded-full tabular-nums">{pendientes.length}</span></h2>
           {pendientes.length === 0 && <p className="text-sm text-zinc-400 bg-white border border-dashed rounded-2xl p-4 text-center">Sin pendientes</p>}
           {pendientes.map((p) => (
-            <CardPedido key={p.id} p={p} actions={<><Button size="sm" onClick={() => updatePedido(p.id, { estado: "en_preparacion" })}>Cocinar</Button><Button size="sm" variant="outline" onClick={() => updatePedido(p.id, { estado: "cancelado" })}>Cancelar</Button></>} />
+            <CardPedido key={p.id} p={p} actions={<><Button size="sm" onClick={() => avanzarPedido(p.id, { estado: "en_preparacion" })}>Cocinar</Button><Button size="sm" variant="outline" onClick={() => avanzarPedido(p.id, { estado: "cancelado" })}>Cancelar</Button></>} />
           ))}
         </div>
 
@@ -69,7 +69,7 @@ export default function CocinaPage() {
           <h2 className="font-semibold tracking-tight">En preparacion</h2>
           {enPrep.length === 0 && <p className="text-sm text-zinc-400 bg-white border border-dashed rounded-2xl p-4 text-center">Nada en preparacion</p>}
           {enPrep.map((p) => (
-            <CardPedido key={p.id} p={p} actions={<><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => updatePedido(p.id, { estado: "listo" })}>Listo</Button><Button size="sm" variant="outline" onClick={() => updatePedido(p.id, { estado: "pendiente" })}>Devolver</Button></>} />
+            <CardPedido key={p.id} p={p} actions={<><Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => avanzarPedido(p.id, { estado: "listo" })}>Listo</Button><Button size="sm" variant="outline" onClick={() => avanzarPedido(p.id, { estado: "pendiente" })}>Devolver</Button></>} />
           ))}
         </div>
 
@@ -77,7 +77,7 @@ export default function CocinaPage() {
           <h2 className="font-semibold tracking-tight">Listos para entregar</h2>
           {listos.length === 0 && <p className="text-sm text-zinc-400 bg-white border border-dashed rounded-2xl p-4 text-center">Sin listos</p>}
           {listos.map((p) => (
-            <CardPedido key={p.id} p={p} actions={<><Button size="sm" variant="secondary" onClick={() => updatePedido(p.id, { estado: "entregado" })}>Entregado</Button><Button size="sm" variant="outline" onClick={() => updatePedido(p.id, { estado: "en_preparacion" })}>Corregir</Button></>} />
+            <CardPedido key={p.id} p={p} actions={<><Button size="sm" variant="secondary" onClick={() => avanzarPedido(p.id, { estado: "entregado" })}>Entregado</Button><Button size="sm" variant="outline" onClick={() => avanzarPedido(p.id, { estado: "en_preparacion" })}>Corregir</Button></>} />
           ))}
         </div>
       </div>

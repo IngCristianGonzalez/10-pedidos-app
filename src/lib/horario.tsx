@@ -43,29 +43,21 @@ async function loadShared(): Promise<HorarioConfig | null> {
 }
 
 function saveShared(cfg: HorarioConfig) {
-  try {
-    const sb = getSupabase();
-    if (!sb || !isSupabaseConfigured) return;
-    void (sb.from("negocio_horario") as unknown as {
-      upsert: (v: Record<string, unknown>) => PromiseLike<unknown>;
-    })
-      .upsert({
-        id: "gigi",
-        horarios: cfg.horarios,
-        cerrado_temporal: cfg.cerradoTemporal,
-        mensaje_cerrado: cfg.mensajeCerrado,
-        updated_at: new Date().toISOString(),
+  // Escritura vía servidor (service_role). La key anónima es solo-lectura.
+  fetch("/api/config", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      tipo: "horario",
+      datos: { horarios: cfg.horarios, cerradoTemporal: cfg.cerradoTemporal, mensajeCerrado: cfg.mensajeCerrado },
+    }),
+  })
+    .then((res) =>
+      res.json().catch(() => null).then((json) => {
+        if (!res.ok || !json?.ok) console.error("[API] negocio_horario:", json?.error || res.status);
       })
-      .then(
-        (res) => {
-          const r = res as { error?: { message?: string } | null };
-          if (r?.error) console.error("[Supabase] negocio_horario:", r.error.message);
-        },
-        (e) => console.error("[Supabase] negocio_horario:", e)
-      );
-  } catch (e) {
-    console.error("[Supabase] negocio_horario:", e);
-  }
+    )
+    .catch((e) => console.error("[API] negocio_horario:", e));
 }
 
 export function isOpenNow(cfg: HorarioConfig, now = new Date()): boolean {

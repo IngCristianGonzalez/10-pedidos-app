@@ -72,10 +72,9 @@ create table if not exists negocio_config (
   qr_image text not null default '',
   updated_at timestamptz default now()
 );
-alter table negocio_config disable row level security;
 insert into negocio_config (id) values ('gigi') on conflict (id) do nothing;
 
--- Bucket público para el QR de Nequi (la app lo sube desde Cuenta admin)
+-- Bucket público para el QR de Nequi (la subida la hace el servidor con service_role)
 insert into storage.buckets (id, name, public)
 values ('negocio', 'negocio', true)
 on conflict (id) do update set public = true;
@@ -83,22 +82,50 @@ drop policy if exists "negocio lectura publica" on storage.objects;
 create policy "negocio lectura publica" on storage.objects
   for select using (bucket_id = 'negocio');
 drop policy if exists "negocio subida anon" on storage.objects;
-create policy "negocio subida anon" on storage.objects
-  for insert with check (bucket_id = 'negocio');
 drop policy if exists "negocio actualiza anon" on storage.objects;
-create policy "negocio actualiza anon" on storage.objects
-  for update using (bucket_id = 'negocio');
-alter table mesas disable row level security;
-alter table productos disable row level security;
-alter table pedidos disable row level security;
-alter table tickets_cocina disable row level security;
-alter table facturas disable row level security;
+
+-- ===== RLS: la app escribe SOLO vía /api (service_role, valida transiciones).
+-- La key anónima del frontend solo tiene permiso de LECTURA. =====
+alter table mesas enable row level security;
+alter table productos enable row level security;
+alter table pedidos enable row level security;
+alter table tickets_cocina enable row level security;
+alter table facturas enable row level security;
+alter table negocio_config enable row level security;
+alter table negocio_horario enable row level security;
+
+drop policy if exists "lectura anonima" on mesas;
+create policy "lectura anonima" on mesas for select to anon using (true);
+drop policy if exists "lectura anonima" on productos;
+create policy "lectura anonima" on productos for select to anon using (true);
+drop policy if exists "lectura anonima" on pedidos;
+create policy "lectura anonima" on pedidos for select to anon using (true);
+drop policy if exists "lectura anonima" on tickets_cocina;
+create policy "lectura anonima" on tickets_cocina for select to anon using (true);
+drop policy if exists "lectura anonima" on facturas;
+create policy "lectura anonima" on facturas for select to anon using (true);
+drop policy if exists "lectura anonima" on negocio_config;
+create policy "lectura anonima" on negocio_config for select to anon using (true);
+drop policy if exists "lectura anonima" on negocio_horario;
+create policy "lectura anonima" on negocio_horario for select to anon using (true);
 
 -- Seed mesas 1-3
 insert into mesas (id, numero, estado, capacidad) values
 ('m1','1','disponible',4),
 ('m2','2','disponible',4),
 ('m3','3','disponible',6)
+on conflict (id) do nothing;
+
+-- Seed productos (menú inicial; el admin los edita en Productos)
+insert into productos (id, nombre, descripcion, precio, categoria, imagen, disponible, created_at) values
+('p1','Papas Gigi Clásicas','Papas a la francesa crujientes por fuera, suaves por dentro. Porción familiar.',12000,'papas','https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400',true,now()),
+('p2','Salchipapa Gigi','Papas + salchicha premium + salsas de la casa + queso.',18000,'salchipapas','https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400',true,now()),
+('p3','Hamburguesa Gigi Doble','Doble carne 150g, queso cheddar, tocineta, papas incluidas.',25000,'hamburguesas','https://images.unsplash.com/photo-1568909344668-6f14a07b56a0?w=400',true,now()),
+('p4','Perro Gigi Especial','Salchicha alemana, ripio, queso, papas chongo, salsas.',16000,'perros','https://images.unsplash.com/photo-1612392062126-0d6f0f3d8e83?w=400',true,now()),
+('p5','Combo Familiar Gigi','2 hamburguesas + papas gigantes + 2 gaseosas 400ml.',48000,'combos','https://images.unsplash.com/photo-1550547660-d9450f859349?w=400',true,now()),
+('p6','Gaseosa 400ml','Coca-Cola / Manzana / Naranja - fría.',4000,'bebidas','https://images.unsplash.com/photo-1624552184280-9e9631bbeee9?w=400',true,now()),
+('p7','Papas con Queso y Tocineta','Papas cubiertas con queso cheddar fundido y tocineta crocante.',19000,'papas','https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?w=400',false,now()),
+('p8','Mazorquita Gigi','Maíz tierno, pollo, queso, papas, salsas - estilo desgranado.',22000,'otros','https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',true,now())
 on conflict (id) do nothing;
 
 -- Horario compartido del negocio (lo edita el admin en Cuenta, lo ven todos los dispositivos)
@@ -109,7 +136,6 @@ create table if not exists negocio_horario (
   mensaje_cerrado text not null default '',
   updated_at timestamptz default now()
 );
-alter table negocio_horario disable row level security;
 insert into negocio_horario (id, horarios, cerrado_temporal, mensaje_cerrado)
 values ('gigi',
   '[{"dia":0,"abre":"18:00","cierra":"23:00","activo":true},{"dia":1,"abre":"18:00","cierra":"23:00","activo":false},{"dia":2,"abre":"18:00","cierra":"23:00","activo":false},{"dia":3,"abre":"18:00","cierra":"23:00","activo":false},{"dia":4,"abre":"18:00","cierra":"23:00","activo":false},{"dia":5,"abre":"18:00","cierra":"22:30","activo":true},{"dia":6,"abre":"18:00","cierra":"23:00","activo":true}]'::jsonb,

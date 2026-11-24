@@ -2,7 +2,7 @@
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useStore, calcTotal } from "@/lib/store";
-import { formatCOP, uid } from "@/lib/utils";
+import { formatCOP } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea, Label, Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -18,7 +18,7 @@ import { useNegocioConfig } from "@/lib/transferencia";
 export default function MesaPublicPage() {
   const params = useParams<{ mesaId: string }>();
   const idOrNumero = decodeURIComponent(params.mesaId || "");
-  const { mesas, productos, pedidos, facturas, addPedido, updatePedido, addFactura, ocuparMesa, addTicketCocina } = useStore();
+  const { mesas, productos, pedidos, crearPedido, avanzarPedido } = useStore();
   const { isOpen } = useHorario();
   const [carrito, setCarrito] = useState<DetallePedido[]>([]);
   const [notas, setNotas] = useState("");
@@ -56,74 +56,26 @@ export default function MesaPublicPage() {
     else setCarrito((prev) => prev.map((i) => (i.productoId === productoId ? { ...i, cantidad: qty, subtotal: qty * i.precio } : i)));
   };
 
-  const handlePedir = () => {
+  const handlePedir = async () => {
     if (!mesa) return;
     if (carrito.length === 0) { setAlertMsg("Agrega al menos 1 producto al carrito"); return; }
-    const total = calcTotal(carrito);
-    const pedidoId = uid("PED-");
-    const ticketId = uid("TK-");
-    const nuevo = {
-      id: pedidoId,
-      mesa: mesa.numero,
-      mesaId: mesa.id,
-      items: carrito,
-      estado: "pendiente" as EstadoPedido,
-      total,
-      notas,
-      medioPago: null,
-      creadoPor: "qr",
-      esQr: true,
-      ticketCocinaId: ticketId,
-      facturaId: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    const ticket = {
-      id: ticketId,
-      pedidoId,
-      mesaId: mesa.id,
-      numeroMesa: mesa.numero,
-      items: carrito,
-      notas,
-      impresoEn: null,
-      reimpresiones: 0,
-      createdAt: new Date().toISOString(),
-    };
-    addPedido(nuevo);
-    addTicketCocina(ticket);
-    ocuparMesa(mesa.id, pedidoId);
+    const r = await crearPedido({ mesa: mesa.numero, items: carrito, notas, creadoPor: "qr", esQr: true });
+    if (!r.ok) { setAlertMsg(r.error); return; }
     setCarrito([]);
     setNotas("");
-    setOk(pedidoId);
+    setOk(r.pedidoId);
   };
 
-  const finalizarPrepago = (notaRef: string) => {
+  const finalizarPrepago = async (notaRef: string) => {
     if (!pedidoActivo || pedidoActivo.estado !== "pendiente") return;
     stopPoll();
-    const consecutivo = `FAC-${String(facturas.length + 1).padStart(6, "0")}`;
-    const subtotal = Math.round(pedidoActivo.total / 1.19);
-    const ivaIncluido = pedidoActivo.total - subtotal;
-    const facturaId = `FACID-${Date.now()}`;
-    addFactura({
-      id: facturaId,
-      consecutivo,
-      pedidoId: pedidoActivo.id,
-      mesaId: pedidoActivo.mesaId || "",
-      numeroMesa: pedidoActivo.mesa,
-      items: pedidoActivo.items,
-      subtotal,
-      ivaIncluido,
-      total: pedidoActivo.total,
-      medioPago: "transferencia",
-      createdAt: new Date().toISOString(),
-      impreso: false,
-    });
-    updatePedido(pedidoActivo.id, {
+    const r = await avanzarPedido(pedidoActivo.id, {
       estado: "en_preparacion",
       medioPago: "transferencia",
-      facturaId,
-      notas: `${pedidoActivo.notas || ""}${notaRef}`.slice(0, 500),
+      notaRef,
+      crearFactura: true,
     });
+    if (!r.ok) { setAlertMsg(r.error); return; }
     setShowPago(false);
     setReferencia("");
     setQrDyn(null);

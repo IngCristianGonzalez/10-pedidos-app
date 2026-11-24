@@ -1,6 +1,6 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { Producto, Pedido, DetallePedido, Mesa, TicketCocina, Factura } from "@/types";
+import { Producto, Pedido, DetallePedido, Mesa, TicketCocina, Factura, EstadoPedido, MedioPago } from "@/types";
 import { PRODUCTOS_MOCK, PEDIDOS_MOCK, MESAS_MOCK } from "./mock-data";
 import {
   getSupabase,
@@ -10,11 +10,6 @@ import {
   mapPedido,
   mapTicket,
   mapFactura,
-  toMesaRow,
-  toProductoRow,
-  toPedidoRow,
-  toTicketRow,
-  toFacturaRow,
 } from "./supabase";
 
 const STORAGE_PRODUCTOS = "gigi_productos";
@@ -34,28 +29,41 @@ type StoreContextType = {
   addProducto: (p: Producto) => void;
   updateProducto: (id: string, data: Partial<Producto>) => void;
   deleteProducto: (id: string) => void;
-  addPedido: (pedido: Pedido) => void;
-  updatePedido: (id: string, data: Partial<Pedido>) => void;
+  // Toda escritura pasa por /api (service_role + validación). El cliente jamás
+  // escribe directo a Supabase: la key anónima solo tiene permiso de lectura.
+  crearPedido: (input: {
+    mesa: string;
+    items: DetallePedido[];
+    notas: string;
+    creadoPor: string;
+    esQr: boolean;
+  }) => Promise<{ ok: true; pedidoId: string } | { ok: false; error: string }>;
+  avanzarPedido: (
+    id: string,
+    opts: { estado: EstadoPedido; medioPago?: MedioPago; notaRef?: string; crearFactura?: boolean }
+  ) => Promise<{ ok: true; factura?: Factura } | { ok: false; error: string }>;
   deletePedido: (id: string) => void;
   addMesa: (m: Mesa) => void;
   updateMesa: (id: string, data: Partial<Mesa>) => void;
   deleteMesa: (id: string) => void;
-  ocuparMesa: (mesaId: string, pedidoId: string) => void;
-  liberarMesaSiVacia: (mesaId: string, pedidoId: string) => void;
   addTicketCocina: (t: TicketCocina) => void;
   updateTicketCocina: (id: string, data: Partial<TicketCocina>) => void;
-  addFactura: (f: Factura) => void;
   resetMock: () => void;
 };
 
 const StoreContext = createContext<StoreContextType | null>(null);
 
-// helper: fire-and-forget supabase with error log accepts PromiseLike from supabase-js
-function sbLog(p: PromiseLike<unknown>, ctx: string) {
-  Promise.resolve(p as unknown as Promise<unknown>).then((res: unknown) => {
-    const r = res as { error?: { message: string } | null };
-    if (r?.error) console.error(`[Supabase] ${ctx}:`, r.error.message);
-  }).catch((e) => console.error(`[Supabase] ${ctx}:`, e));
+// Llamada al API servidor (service_role). Nunca lanza: devuelve {ok:false}.
+// Las lecturas siguen directas con la key anónima (solo-lectura por RLS).
+async function apiMut<T>(path: string, init?: RequestInit): Promise<{ ok: true; data: T } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(path, init);
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.ok) return { ok: false, error: json?.error || `Error ${res.status}` };
+    return { ok: true, data: json.data as T };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message || "Error de red" };
+  }
 }
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
@@ -92,13 +100,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
           if (productosRes.data) {
             if (productosRes.data.length > 0) setProductos(productosRes.data.map((r: unknown) => mapProducto(r as Parameters<typeof mapProducto>[0])));
-            else {
-              // seed productos mock en DB si está vacía (first run)
-              if (!productosRes.error) {
-                const rows = PRODUCTOS_MOCK.map(toProductoRow);
-                sbLog(sb.from("productos").upsert(rows, { onConflict: "id" }), "seed productos");
-              }
-            }
+            // Si productos está vacío en DB, el seed vive en supabase.sql (la key anónima es solo-lectura).
           }
           if (pedidosRes.data) setPedidos(pedidosRes.data.map((r: unknown) => mapPedido(r as Parameters<typeof mapPedido>[0])));
           if (ticketsRes.data) setTicketsCocina(ticketsRes.data.map((r: unknown) => mapTicket(r as Parameters<typeof mapTicket>[0])));
@@ -156,130 +158,162 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const addProducto = (p: Producto) => {
     setProductos((prev) => [p, ...prev]);
-    const sb = getSupabase();
-    if (sb) sbLog(sb.from("productos").insert(toProductoRow(p)), "addProducto");
+    void apiMut("/api/productos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(p),
+    }).then((r) => {
+      if (!r.ok) console.error("[API] addProducto:", r.error);
+    });
   };
   const updateProducto = (id: string, data: Partial<Producto>) => {
+    const patch: Record<string, unknown> = {};
+    if (data.nombre !== undefined) patch.nombre = data.nombre;
+    if (data.descripcion !== undefined) patch.descripcion = data.descripcion;
+    if (data.precio !== undefined) patch.precio = data.precio;
+    if (data.categoria !== undefined) patch.categoria = data.categoria;
+    if (data.imagen !== undefined) patch.imagen = data.imagen;
+    if (data.disponible !== undefined) patch.disponible = data.disponible;
     setProductos((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
-    const sb = getSupabase();
-    if (sb) {
-      const row: Record<string, unknown> = {};
-      if (data.nombre !== undefined) row.nombre = data.nombre;
-      if (data.descripcion !== undefined) row.descripcion = data.descripcion;
-      if (data.precio !== undefined) row.precio = data.precio;
-      if (data.categoria !== undefined) row.categoria = data.categoria;
-      if (data.imagen !== undefined) row.imagen = data.imagen;
-      if (data.disponible !== undefined) row.disponible = data.disponible;
-      if (Object.keys(row).length) sbLog(sb.from("productos").update(row).eq("id", id), "updateProducto");
+    if (Object.keys(patch).length) {
+      void apiMut("/api/productos", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, patch }),
+      }).then((r) => {
+        if (!r.ok) console.error("[API] updateProducto:", r.error);
+      });
     }
   };
   const deleteProducto = (id: string) => {
     setProductos((prev) => prev.filter((p) => p.id !== id));
-    const sb = getSupabase();
-    if (sb) sbLog(sb.from("productos").delete().eq("id", id), "deleteProducto");
+    void apiMut(`/api/productos?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) => {
+      if (!r.ok) console.error("[API] deleteProducto:", r.error);
+    });
   };
 
-  const addPedido = (pedido: Pedido) => {
-    setPedidos((prev) => [pedido, ...prev]);
-    const sb = getSupabase();
-    if (sb) sbLog(sb.from("pedidos").insert(toPedidoRow(pedido)), "addPedido");
-  };
-  const updatePedido = (id: string, data: Partial<Pedido>) => {
-    setPedidos((prev) => prev.map((p) => (p.id === id ? { ...p, ...data, updatedAt: new Date().toISOString() } : p)));
-    const sb = getSupabase();
-    if (sb) {
-      const row: Record<string, unknown> = {};
-      if (data.mesa !== undefined) row.mesa = data.mesa;
-      if (data.mesaId !== undefined) row.mesa_id = data.mesaId;
-      if (data.items !== undefined) row.items = data.items;
-      if (data.estado !== undefined) row.estado = data.estado;
-      if (data.total !== undefined) row.total = data.total;
-      if (data.notas !== undefined) row.notas = data.notas;
-      if (data.medioPago !== undefined) row.medio_pago = data.medioPago;
-      if (data.esQr !== undefined) row.es_qr = data.esQr;
-      if (data.ticketCocinaId !== undefined) row.ticket_cocina_id = data.ticketCocinaId;
-      if (data.facturaId !== undefined) row.factura_id = data.facturaId;
-      row.updated_at = new Date().toISOString();
-      sbLog(sb.from("pedidos").update(row).eq("id", id), "updatePedido");
+  // Crea pedido + ticket + ocupa mesa en el servidor (totales calculados allá).
+  const crearPedido = async (input: {
+    mesa: string;
+    items: DetallePedido[];
+    notas: string;
+    creadoPor: string;
+    esQr: boolean;
+  }): Promise<{ ok: true; pedidoId: string } | { ok: false; error: string }> => {
+    const r = await apiMut<{ pedido: Pedido; ticket: TicketCocina | null }>("/api/pedidos/crear", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!r.ok) {
+      console.error("[API] crearPedido:", r.error);
+      return r;
     }
+    setPedidos((prev) => [r.data.pedido, ...prev]);
+    if (r.data.ticket) setTicketsCocina((prev) => [r.data.ticket as TicketCocina, ...prev]);
+    setMesas((prev) =>
+      prev.map((m) =>
+        m.numero === r.data.pedido.mesa
+          ? { ...m, estado: "ocupada" as const, pedidoActivoIds: [...m.pedidoActivoIds, r.data.pedido.id], updatedAt: new Date().toISOString() }
+          : m
+      )
+    );
+    return { ok: true, pedidoId: r.data.pedido.id };
+  };
+
+  // Cambia estado con validación en servidor. Si pide factura, el servidor la
+  // genera (prepago transferencia o cobro final) y la devuelve.
+  const avanzarPedido = async (
+    id: string,
+    opts: { estado: EstadoPedido; medioPago?: MedioPago; notaRef?: string; crearFactura?: boolean }
+  ): Promise<{ ok: true; factura?: Factura } | { ok: false; error: string }> => {
+    const r = await apiMut<{ pedido: Pedido; factura: Factura | null }>("/api/pedidos/estado", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...opts }),
+    });
+    if (!r.ok) {
+      console.error("[API] avanzarPedido:", r.error);
+      return r;
+    }
+    setPedidos((prev) => prev.map((p) => (p.id === id ? r.data.pedido : p)));
+    if (r.data.factura) setFacturas((prev) => [r.data.factura as Factura, ...prev]);
+    if (["pagado", "cancelado"].includes(r.data.pedido.estado) && r.data.pedido.mesaId) {
+      const mesaId = r.data.pedido.mesaId;
+      const pid = r.data.pedido.id;
+      setMesas((prev) =>
+        prev.map((m) => {
+          if (m.id !== mesaId) return m;
+          const restantes = m.pedidoActivoIds.filter((x) => x !== pid);
+          return {
+            ...m,
+            pedidoActivoIds: restantes,
+            estado: restantes.length === 0 ? ("disponible" as const) : m.estado,
+            updatedAt: new Date().toISOString(),
+          };
+        })
+      );
+    }
+    return { ok: true, factura: r.data.factura ?? undefined };
   };
   const deletePedido = (id: string) => {
     setPedidos((prev) => prev.filter((p) => p.id !== id));
-    const sb = getSupabase();
-    if (sb) sbLog(sb.from("pedidos").delete().eq("id", id), "deletePedido");
+    void apiMut(`/api/pedidos/estado?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) => {
+      if (!r.ok) console.error("[API] deletePedido:", r.error);
+    });
   };
 
   const addMesa = (m: Mesa) => {
     setMesas((prev) => [...prev, m]);
-    const sb = getSupabase();
-    if (sb) sbLog(sb.from("mesas").insert(toMesaRow(m)), "addMesa");
+    void apiMut("/api/mesas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: m.id, numero: m.numero, estado: m.estado, capacidad: m.capacidad }),
+    }).then((r) => {
+      if (!r.ok) console.error("[API] addMesa:", r.error);
+    });
   };
   const updateMesa = (id: string, data: Partial<Mesa>) => {
+    const patch: Record<string, unknown> = {};
+    if (data.numero !== undefined) patch.numero = data.numero;
+    if (data.estado !== undefined) patch.estado = data.estado;
+    if (data.capacidad !== undefined) patch.capacidad = data.capacidad;
     setMesas((prev) => prev.map((m) => (m.id === id ? { ...m, ...data, updatedAt: new Date().toISOString() } : m)));
-    const sb = getSupabase();
-    if (sb) {
-      const row: Record<string, unknown> = {};
-      if (data.numero !== undefined) row.numero = data.numero;
-      if (data.estado !== undefined) row.estado = data.estado;
-      if (data.capacidad !== undefined) row.capacidad = data.capacidad;
-      if (data.pedidoActivoIds !== undefined) row.pedido_activo_ids = data.pedidoActivoIds;
-      row.updated_at = new Date().toISOString();
-      if (Object.keys(row).length > 1 || (Object.keys(row).length === 1 && !row.updated_at)) {
-        sbLog(sb.from("mesas").update(row).eq("id", id), "updateMesa");
-      } else if (data.pedidoActivoIds === undefined && data.estado === undefined && data.numero === undefined && data.capacidad === undefined) {
-        // still update timestamp
-        sbLog(sb.from("mesas").update({ updated_at: row.updated_at }).eq("id", id), "updateMesa touch");
-      }
+    if (Object.keys(patch).length) {
+      void apiMut("/api/mesas", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, patch }),
+      }).then((r) => {
+        if (!r.ok) console.error("[API] updateMesa:", r.error);
+      });
     }
   };
   const deleteMesa = (id: string) => {
     setMesas((prev) => prev.filter((m) => m.id !== id));
-    const sb = getSupabase();
-    if (sb) sbLog(sb.from("mesas").delete().eq("id", id), "deleteMesa");
-  };
-  const ocuparMesa = (mesaId: string, pedidoId: string) => {
-    setMesas((prev) =>
-      prev.map((m) => {
-        if (m.id !== mesaId) return m;
-        const next = { ...m, estado: "ocupada" as const, pedidoActivoIds: [...m.pedidoActivoIds, pedidoId], updatedAt: new Date().toISOString() };
-        const sb = getSupabase();
-        if (sb) sbLog(sb.from("mesas").update({ estado: "ocupada", pedido_activo_ids: next.pedidoActivoIds, updated_at: next.updatedAt }).eq("id", mesaId), "ocuparMesa");
-        return next;
-      })
-    );
-  };
-  const liberarMesaSiVacia = (mesaId: string, pedidoId: string) => {
-    setMesas((prev) =>
-      prev.map((m) => {
-        if (m.id !== mesaId) return m;
-        const restantes = m.pedidoActivoIds.filter((id) => id !== pedidoId);
-        const next = { ...m, pedidoActivoIds: restantes, estado: restantes.length === 0 ? ("disponible" as const) : m.estado, updatedAt: new Date().toISOString() };
-        const sb = getSupabase();
-        if (sb) sbLog(sb.from("mesas").update({ pedido_activo_ids: restantes, estado: next.estado, updated_at: next.updatedAt }).eq("id", mesaId), "liberarMesaSiVacia");
-        return next;
-      })
-    );
+    void apiMut(`/api/mesas?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) => {
+      if (!r.ok) console.error("[API] deleteMesa:", r.error);
+    });
   };
 
+  // Solo local: el ticket lo crea el servidor al crear el pedido.
   const addTicketCocina = (t: TicketCocina) => {
     setTicketsCocina((prev) => [t, ...prev]);
-    const sb = getSupabase();
-    if (sb) sbLog(sb.from("tickets_cocina").insert(toTicketRow(t)), "addTicketCocina");
   };
   const updateTicketCocina = (id: string, data: Partial<TicketCocina>) => {
     setTicketsCocina((prev) => prev.map((t) => (t.id === id ? { ...t, ...data } : t)));
-    const sb = getSupabase();
-    if (sb) {
-      const row: Record<string, unknown> = {};
-      if (data.impresoEn !== undefined) row.impreso_en = data.impresoEn;
-      if (data.reimpresiones !== undefined) row.reimpresiones = data.reimpresiones;
-      if (Object.keys(row).length) sbLog(sb.from("tickets_cocina").update(row).eq("id", id), "updateTicketCocina");
+    const patch: Record<string, unknown> = {};
+    if (data.impresoEn !== undefined) patch.impresoEn = data.impresoEn;
+    if (data.reimpresiones !== undefined) patch.reimpresiones = data.reimpresiones;
+    if (Object.keys(patch).length) {
+      void apiMut("/api/tickets", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...patch }),
+      }).then((r) => {
+        if (!r.ok) console.error("[API] updateTicketCocina:", r.error);
+      });
     }
-  };
-  const addFactura = (f: Factura) => {
-    setFacturas((prev) => [f, ...prev]);
-    const sb = getSupabase();
-    if (sb) sbLog(sb.from("facturas").insert(toFacturaRow(f)), "addFactura");
   };
 
   const resetMock = () => {
@@ -308,17 +342,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         addProducto,
         updateProducto,
         deleteProducto,
-        addPedido,
-        updatePedido,
+        crearPedido,
+        avanzarPedido,
         deletePedido,
         addMesa,
         updateMesa,
         deleteMesa,
-        ocuparMesa,
-        liberarMesaSiVacia,
         addTicketCocina,
         updateTicketCocina,
-        addFactura,
         resetMock,
       }}
     >

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useStore, calcTotal } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
-import { formatCOP, formatDate, uid } from "@/lib/utils";
+import { formatCOP, formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label, Select } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { DetallePedido, EstadoPedido, ESTADOS_COLOR, ESTADOS_LABEL } from "@/typ
 import { ConfirmModal, AlertModal } from "@/components/ui/modal";
 
 export default function PedidosPage() {
-  const { productos, pedidos, mesas, addPedido, updatePedido, deletePedido, ocuparMesa, addTicketCocina } = useStore();
+  const { productos, pedidos, mesas, crearPedido, avanzarPedido, deletePedido } = useStore();
   const { user } = useAuth();
   const [mesa, setMesa] = useState("1");
   const [notas, setNotas] = useState("");
@@ -44,42 +44,10 @@ export default function PedidosPage() {
     else setCarrito((prev) => prev.map((i) => (i.productoId === productoId ? { ...i, cantidad: qty, subtotal: qty * i.precio } : i)));
   };
 
-  const handleCrear = () => {
+  const handleCrear = async () => {
     if (!mesa || carrito.length === 0) { setAlertMsg("Selecciona una mesa y al menos 1 producto"); return; }
-    const total = calcTotal(carrito);
-    const mesaObj = mesas.find((m) => m.numero === mesa);
-    const ticketId = uid("TK-");
-    const pedidoId = uid("PED-");
-    const nuevo = {
-      id: pedidoId,
-      mesa,
-      mesaId: mesaObj?.id || null,
-      items: carrito,
-      estado: "pendiente" as EstadoPedido,
-      total,
-      notas,
-      medioPago: null,
-      creadoPor: user?.id || "u2",
-      esQr: false,
-      ticketCocinaId: ticketId,
-      facturaId: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    const ticket = {
-      id: ticketId,
-      pedidoId,
-      mesaId: mesaObj?.id || "",
-      numeroMesa: mesa,
-      items: carrito,
-      notas,
-      impresoEn: null,
-      reimpresiones: 0,
-      createdAt: new Date().toISOString(),
-    };
-    addPedido(nuevo);
-    addTicketCocina(ticket);
-    if (mesaObj) ocuparMesa(mesaObj.id, pedidoId);
+    const r = await crearPedido({ mesa, items: carrito, notas, creadoPor: user?.id || "u2", esQr: false });
+    if (!r.ok) { setAlertMsg(r.error); return; }
     setCarrito([]);
     setMesa("");
     setNotas("");
@@ -232,7 +200,7 @@ export default function PedidosPage() {
                 {(["pendiente", "en_preparacion", "listo", "entregado", "pagado"] as EstadoPedido[]).map((est) => (
                   <button
                     key={est}
-                    onClick={() => updatePedido(p.id, { estado: est })}
+                    onClick={() => avanzarPedido(p.id, { estado: est })}
                     className={`text-xs px-2 py-1 rounded-full border font-semibold ${p.estado === est ? "bg-[#FF6B00] text-white border-[#FF6B00]" : "bg-white hover:bg-zinc-50"}`}
                   >
                     {ESTADOS_LABEL[est]}

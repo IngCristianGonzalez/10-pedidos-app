@@ -14,7 +14,7 @@ import { AlertModal } from "@/components/ui/modal";
 import { useNegocioConfig } from "@/lib/transferencia";
 
 export default function CajaPage() {
-  const { pedidos, updatePedido, ticketsCocina, updateTicketCocina, facturas, addFactura, liberarMesaSiVacia } = useStore();
+  const { pedidos, avanzarPedido, ticketsCocina, updateTicketCocina, facturas } = useStore();
   const { datos: datosTransf } = useNegocioConfig();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [medio, setMedio] = useState<MedioPago>("efectivo");
@@ -31,12 +31,12 @@ export default function CajaPage() {
   const selectedTicketCocina = ticketsCocina.find((t) => t.pedidoId === selectedId) || ticketsCocina.find((t) => t.id === ticketCocinaId) || null;
   const ticketsPendientes = ticketsCocina.filter((t) => !t.impresoEn);
 
-  const handleCobrar = () => {
+  const handleCobrar = async () => {
     if (!selected) return;
     // Si ya es prepago por transferencia con factura, no generar otra: solo cerrar a pagado
     if (selected.medioPago === "transferencia" && selected.facturaId) {
-      updatePedido(selected.id, { estado: "pagado" });
-      if (selected.mesaId) liberarMesaSiVacia(selected.mesaId, selected.id);
+      const r = await avanzarPedido(selected.id, { estado: "pagado" });
+      if (!r.ok) { setAlertMsg(r.error); return; }
       setUltimaFacturaId(selected.facturaId);
       setSelectedId(null);
       setEfectivoRecibido(0);
@@ -44,28 +44,10 @@ export default function CajaPage() {
       return;
     }
     if (medio === "efectivo" && efectivoRecibido < selected.total) { setAlertMsg("Efectivo insuficiente el monto recibido es menor al total."); return; }
-    const consecutivo = `FAC-${String(facturas.length + 1).padStart(6, "0")}`;
-    const subtotal = Math.round(selected.total / 1.19);
-    const ivaIncluido = selected.total - subtotal;
-    const facturaId = `FACID-${Date.now()}`;
-    const factura = {
-      id: facturaId,
-      consecutivo,
-      pedidoId: selected.id,
-      mesaId: selected.mesaId || "",
-      numeroMesa: selected.mesa,
-      items: selected.items,
-      subtotal,
-      ivaIncluido,
-      total: selected.total,
-      medioPago: medio,
-      createdAt: new Date().toISOString(),
-      impreso: false,
-    };
-    addFactura(factura);
-    updatePedido(selected.id, { estado: "pagado", medioPago: medio, facturaId });
-    if (selected.mesaId) liberarMesaSiVacia(selected.mesaId, selected.id);
-    setUltimaFacturaId(facturaId);
+    // El servidor valida la transición y genera la factura (consecutivo único)
+    const r = await avanzarPedido(selected.id, { estado: "pagado", medioPago: medio, crearFactura: true });
+    if (!r.ok) { setAlertMsg(r.error); return; }
+    setUltimaFacturaId(r.factura?.id || null);
     setSelectedId(null);
     setEfectivoRecibido(0);
     setTimeout(() => printElement("print-factura"), 200);
@@ -76,29 +58,16 @@ export default function CajaPage() {
     else if (selected) printElement("print-factura");
   };
 
-  const handlePrepagoTransferencia = () => {
+  const handlePrepagoTransferencia = async () => {
     if (!selected || selected.estado !== "pendiente") return;
-    const consecutivo = `FAC-${String(facturas.length + 1).padStart(6, "0")}`;
-    const subtotal = Math.round(selected.total / 1.19);
-    const ivaIncluido = selected.total - subtotal;
-    const facturaId = `FACID-${Date.now()}`;
-    addFactura({
-      id: facturaId,
-      consecutivo,
-      pedidoId: selected.id,
-      mesaId: selected.mesaId || "",
-      numeroMesa: selected.mesa,
-      items: selected.items,
-      subtotal,
-      ivaIncluido,
-      total: selected.total,
+    // Prepago: a preparación, NO libera mesa. Factura generada en servidor.
+    const r = await avanzarPedido(selected.id, {
+      estado: "en_preparacion",
       medioPago: "transferencia",
-      createdAt: new Date().toISOString(),
-      impreso: false,
+      crearFactura: true,
     });
-    // Prepago: a preparación, NO libera mesa
-    updatePedido(selected.id, { estado: "en_preparacion", medioPago: "transferencia", facturaId });
-    setUltimaFacturaId(facturaId);
+    if (!r.ok) { setAlertMsg(r.error); return; }
+    setUltimaFacturaId(null);
   };
   const handlePrintCocina = (ticketId: string) => {
     setTicketCocinaId(ticketId);

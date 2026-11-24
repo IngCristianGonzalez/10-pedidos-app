@@ -85,39 +85,34 @@ export function useNegocioConfig() {
   const guardar = useCallback(async (d: DatosTransferencia) => {
     setDatos(d);
     saveDatosTransferencia(d);
-    const sb = getSupabase();
-    if (sb && isSupabaseConfigured) {
-      await sb.from("negocio_config").upsert(
-        {
-          id: "gigi",
-          titular: d.titular,
-          nequi: d.nequi,
-          bancolombia: d.bancolombia,
-          mensaje: d.mensaje,
-          qr_image: d.qrImage,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" }
-      );
+    try {
+      const res = await fetch("/api/config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo: "transferencia", datos: d }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) console.error("[API] guardar transferencia:", json?.error || res.status);
+    } catch (e) {
+      console.error("[API] guardar transferencia:", e);
     }
   }, []);
 
   return { datos, setDatos, guardar, cargando };
 }
 
-// Sube el QR al Storage compartido y devuelve la URL pública.
-// Si Supabase no está disponible, devuelve dataURL local (solo visible en ese navegador).
+// Sube el QR al Storage compartido vía servidor (service_role) y devuelve la URL pública.
+// Si el servidor no está configurado, devuelve dataURL local (solo visible en ese navegador).
 export async function subirQRNegocio(file: File): Promise<string> {
-  const sb = getSupabase();
-  if (sb && isSupabaseConfigured) {
-    const ext = file.type.includes("png") ? "png" : "jpeg";
-    const { error } = await sb.storage
-      .from("negocio")
-      .upload("nequi-qr.jpeg", file, { upsert: true, cacheControl: "0", contentType: file.type || "image/jpeg" });
-    if (error) throw error;
-    const { data } = sb.storage.from("negocio").getPublicUrl(`nequi-qr.jpeg`);
-    void ext;
-    return `${data.publicUrl}?t=${Date.now()}`;
+  const form = new FormData();
+  form.append("qr", file);
+  try {
+    const res = await fetch("/api/config/qr", { method: "POST", body: form });
+    const json = await res.json().catch(() => null);
+    if (res.ok && json?.ok && json?.data?.url) return json.data.url as string;
+    console.error("[API] subir QR:", json?.error || res.status);
+  } catch (e) {
+    console.error("[API] subir QR:", e);
   }
   // Fallback local: comprime a dataURL
   const dataUrl: string = await new Promise((resolve, reject) => {
