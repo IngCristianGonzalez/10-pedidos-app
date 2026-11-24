@@ -1,10 +1,10 @@
 "use client";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore, calcTotal } from "@/lib/store";
 import { formatCOP, uid } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Textarea, Label } from "@/components/ui/input";
+import { Textarea, Label, Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DetallePedido, EstadoPedido, ESTADOS_COLOR, ESTADOS_LABEL, CategoriaProducto } from "@/types";
 import { AlertModal } from "@/components/ui/modal";
@@ -12,17 +12,22 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 import { HorarioBanner } from "@/components/horario-banner";
 import { useHorario } from "@/lib/horario";
+import { getDatosTransferencia, TRANSFERENCIA_DEFAULT, type DatosTransferencia } from "@/lib/transferencia";
 
 export default function MesaPublicPage() {
   const params = useParams<{ mesaId: string }>();
   const idOrNumero = decodeURIComponent(params.mesaId || "");
-  const { mesas, productos, pedidos, addPedido, ocuparMesa, addTicketCocina } = useStore();
+  const { mesas, productos, pedidos, facturas, addPedido, updatePedido, addFactura, ocuparMesa, addTicketCocina } = useStore();
   const { isOpen } = useHorario();
   const [carrito, setCarrito] = useState<DetallePedido[]>([]);
   const [notas, setNotas] = useState("");
   const [ok, setOk] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [catActiva, setCatActiva] = useState<string>("todas");
+  const [showPago, setShowPago] = useState(false);
+  const [referencia, setReferencia] = useState("");
+  const [datosTransf, setDatosTransf] = useState<DatosTransferencia>(TRANSFERENCIA_DEFAULT);
+  useEffect(() => { setDatosTransf(getDatosTransferencia()); }, []);
   const mesa = mesas.find((m) => m.numero === idOrNumero || m.id === idOrNumero);
   const pedidosMesa = mesa ? pedidos.filter((p) => p.mesa === mesa.numero || p.mesaId === mesa.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) : [];
   const pedidoActivo = pedidosMesa.find((p) => !["pagado", "cancelado"].includes(p.estado));
@@ -80,6 +85,38 @@ export default function MesaPublicPage() {
     setCarrito([]);
     setNotas("");
     setOk(pedidoId);
+  };
+
+  const handlePagarTransferencia = () => {
+    if (!pedidoActivo || pedidoActivo.estado !== "pendiente") return;
+    const consecutivo = `FAC-${String(facturas.length + 1).padStart(6, "0")}`;
+    const subtotal = Math.round(pedidoActivo.total / 1.19);
+    const ivaIncluido = pedidoActivo.total - subtotal;
+    const facturaId = `FACID-${Date.now()}`;
+    addFactura({
+      id: facturaId,
+      consecutivo,
+      pedidoId: pedidoActivo.id,
+      mesaId: pedidoActivo.mesaId || "",
+      numeroMesa: pedidoActivo.mesa,
+      items: pedidoActivo.items,
+      subtotal,
+      ivaIncluido,
+      total: pedidoActivo.total,
+      medioPago: "transferencia",
+      createdAt: new Date().toISOString(),
+      impreso: false,
+    });
+    const notaRef = referencia.trim() ? ` | Ref transferencia: ${referencia.trim()}` : " | Pagado por transferencia (QR)";
+    updatePedido(pedidoActivo.id, {
+      estado: "en_preparacion",
+      medioPago: "transferencia",
+      facturaId,
+      notas: `${pedidoActivo.notas || ""}${notaRef}`.slice(0, 500),
+    });
+    setShowPago(false);
+    setReferencia("");
+    setOk(`¡Pago registrado! ${pedidoActivo.id} pasó a preparación.`);
   };
 
   if (!mesa) {
@@ -154,6 +191,44 @@ export default function MesaPublicPage() {
                   ))}
                 </div>
               </div>
+              {pedidoActivo.medioPago === "transferencia" && pedidoActivo.estado !== "pendiente" && (
+                <div className="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-sm text-emerald-800">
+                  ✅ Pagado por transferencia — tu pedido ya está en cocina.
+                </div>
+              )}
+              {pedidoActivo.estado === "pendiente" && (
+                <div className="mt-3">
+                  {!showPago ? (
+                    <Button className="w-full" variant="outline" onClick={() => setShowPago(true)}>
+                      💳 Pagar por transferencia ({formatCOP(pedidoActivo.total)})
+                    </Button>
+                  ) : (
+                    <div className="bg-white border border-blue-200 rounded-xl p-3 space-y-2">
+                      <p className="font-bold text-sm">Transferencia {datosTransf.titular}</p>
+                      <div className="grid sm:grid-cols-2 gap-2 text-sm">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                          <p className="text-xs text-zinc-500">Nequi</p>
+                          <p className="font-black">{datosTransf.nequi}</p>
+                        </div>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                          <p className="text-xs text-zinc-500">Bancolombia</p>
+                          <p className="font-black text-xs">{datosTransf.bancolombia}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-zinc-600">{datosTransf.mensaje}</p>
+                      <p className="text-sm font-bold">Total a transferir: {formatCOP(pedidoActivo.total)}</p>
+                      <div>
+                        <Label>Referencia / últimos dígitos (opcional)</Label>
+                        <Input value={referencia} onChange={(e) => setReferencia(e.target.value)} placeholder="Ej: 1234 o comprobante #..." />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button className="flex-1" onClick={handlePagarTransferencia}>Ya pagué, enviar a cocina</Button>
+                        <Button variant="ghost" onClick={() => setShowPago(false)}>Cerrar</Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

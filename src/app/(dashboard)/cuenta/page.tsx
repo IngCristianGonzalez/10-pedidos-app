@@ -8,6 +8,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { AlertModal } from "@/components/ui/modal";
 import { useHorario, DIAS } from "@/lib/horario";
 import { Textarea } from "@/components/ui/input";
+import { getDatosTransferencia, saveDatosTransferencia, TRANSFERENCIA_DEFAULT } from "@/lib/transferencia";
 
 export default function CuentaPage() {
   const { user, changePassword, is2FAEnabled, get2FASecret, setup2FA, confirm2FA, disable2FA } = useAuth();
@@ -72,6 +73,9 @@ export default function CuentaPage() {
   const horario = useHorario();
   const [localHorarios, setLocalHorarios] = useState(horario.horarios);
   useEffect(() => { setLocalHorarios(horario.horarios); }, [horario.horarios]);
+
+  const [datosT, setDatosT] = useState(TRANSFERENCIA_DEFAULT);
+  useEffect(() => { setDatosT(getDatosTransferencia()); }, []);
 
   if (!user) return <p className="p-8 text-center">Cargando...</p>;
 
@@ -219,6 +223,36 @@ export default function CuentaPage() {
               ))}
             </div>
             <Button onClick={() => { horario.updateHorarios(localHorarios); setMsg({ title: "Horarios guardados", desc: "Se actualizaron los horarios. El cartel de cerrado se mostrará según corresponda." }); }} className="w-full">Guardar horarios</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {user.rol === "admin" && (
+        <Card className="border-blue-200 bg-blue-50/30">
+          <CardHeader>
+            <p className="font-black">💳 Datos transferencia</p>
+            <p className="text-sm text-zinc-500">Se muestran al cliente en el QR cuando paga por transferencia.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <Label>Titular</Label>
+              <Input value={datosT.titular} onChange={(e) => setDatosT({ ...datosT, titular: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Nequi</Label>
+                <Input value={datosT.nequi} onChange={(e) => setDatosT({ ...datosT, nequi: e.target.value })} />
+              </div>
+              <div>
+                <Label>Bancolombia</Label>
+                <Input value={datosT.bancolombia} onChange={(e) => setDatosT({ ...datosT, bancolombia: e.target.value })} />
+              </div>
+            </div>
+            <div>
+              <Label>Mensaje al cliente</Label>
+              <Textarea value={datosT.mensaje} onChange={(e) => setDatosT({ ...datosT, mensaje: e.target.value })} rows={2} />
+            </div>
+            <Button onClick={() => { saveDatosTransferencia(datosT); setMsg({ title: "Datos guardados", desc: "Los clientes verán estos datos al pagar por transferencia." }); }} className="w-full">Guardar datos transferencia</Button>
           </CardContent>
         </Card>
       )}

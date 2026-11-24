@@ -220,6 +220,10 @@ export default function PedidosPage() {
                   <p className="font-black">{p.id}</p>
                   <Badge className={ESTADOS_COLOR[p.estado]}>{ESTADOS_LABEL[p.estado]}</Badge>
                   <span className="text-sm bg-zinc-100 px-2 py-0.5 rounded-full">Mesa {p.mesa}</span>
+                  {p.medioPago === "transferencia" && (
+                    <span className="text-[10px] bg-blue-100 border border-blue-200 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">💳 Transferencia</span>
+                  )}
+                  {p.esQr && <span className="text-[10px] bg-purple-100 border border-purple-200 text-purple-700 px-1.5 py-0.5 rounded-full font-bold">QR</span>}
                 </div>
                 <p className="text-sm text-zinc-600 mt-1">{p.items.map((i) => `${i.cantidad}x ${i.nombre}`).join(" • ")}</p>
                 <p className="text-xs text-zinc-400">{formatDate(p.createdAt)} • {p.notas || "sin notas"} • {formatCOP(p.total)}</p>

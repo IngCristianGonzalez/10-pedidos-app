@@ -27,6 +27,9 @@ export default function CocinaPage() {
         <div>
           <p className="font-semibold tracking-tight">Mesa {p.mesa} <span className="text-zinc-400 font-normal">• {p.id}</span></p>
           <p className="text-xs tracking-wide text-zinc-500">{formatDate(p.createdAt)} hace {minutes(p.createdAt)} min</p>
+          {p.medioPago === "transferencia" && (
+            <span className="inline-block mt-1 text-[10px] bg-blue-100 border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full font-bold">💳 Prepago transferencia</span>
+          )}
         </div>
         <Badge className={ESTADOS_COLOR[p.estado]}>{ESTADOS_LABEL[p.estado]}</Badge>
       </div>

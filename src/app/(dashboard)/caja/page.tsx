@@ -30,6 +30,16 @@ export default function CajaPage() {
 
   const handleCobrar = () => {
     if (!selected) return;
+    // Si ya es prepago por transferencia con factura, no generar otra: solo cerrar a pagado
+    if (selected.medioPago === "transferencia" && selected.facturaId) {
+      updatePedido(selected.id, { estado: "pagado" });
+      if (selected.mesaId) liberarMesaSiVacia(selected.mesaId, selected.id);
+      setUltimaFacturaId(selected.facturaId);
+      setSelectedId(null);
+      setEfectivoRecibido(0);
+      setTimeout(() => printElement("print-factura"), 200);
+      return;
+    }
     if (medio === "efectivo" && efectivoRecibido < selected.total) { setAlertMsg("Efectivo insuficiente el monto recibido es menor al total."); return; }
     const consecutivo = `FAC-${String(facturas.length + 1).padStart(6, "0")}`;
     const subtotal = Math.round(selected.total / 1.19);
@@ -61,6 +71,31 @@ export default function CajaPage() {
   const handlePrint = () => {
     if (ultimaFacturaId) printElement("print-factura");
     else if (selected) printElement("print-factura");
+  };
+
+  const handlePrepagoTransferencia = () => {
+    if (!selected || selected.estado !== "pendiente") return;
+    const consecutivo = `FAC-${String(facturas.length + 1).padStart(6, "0")}`;
+    const subtotal = Math.round(selected.total / 1.19);
+    const ivaIncluido = selected.total - subtotal;
+    const facturaId = `FACID-${Date.now()}`;
+    addFactura({
+      id: facturaId,
+      consecutivo,
+      pedidoId: selected.id,
+      mesaId: selected.mesaId || "",
+      numeroMesa: selected.mesa,
+      items: selected.items,
+      subtotal,
+      ivaIncluido,
+      total: selected.total,
+      medioPago: "transferencia",
+      createdAt: new Date().toISOString(),
+      impreso: false,
+    });
+    // Prepago: a preparación, NO libera mesa
+    updatePedido(selected.id, { estado: "en_preparacion", medioPago: "transferencia", facturaId });
+    setUltimaFacturaId(facturaId);
   };
   const handlePrintCocina = (ticketId: string) => {
     setTicketCocinaId(ticketId);
@@ -139,6 +174,9 @@ export default function CajaPage() {
                 </div>
                 <div className="text-right">
                   <Badge className={ESTADOS_COLOR[p.estado]}>{ESTADOS_LABEL[p.estado]}</Badge>
+                  {p.medioPago === "transferencia" && (
+                    <span className="ml-1 text-[10px] bg-blue-100 border border-blue-200 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">Prepago transferencia</span>
+                  )}
                   <p className="font-black mt-1">{formatCOP(p.total)}</p>
                 </div>
               </button>
@@ -169,34 +207,52 @@ export default function CajaPage() {
                   {selected.notas && <p className="text-xs bg-amber-50 border border-amber-200 rounded-xl p-2.5 mt-2 tracking-tight">Notas: {selected.notas}</p>}
                 </div>
 
-                <div>
-                  <Label>Medio de pago *</Label>
-                  <Select value={medio || "efectivo"} onChange={(e) => setMedio(e.target.value as MedioPago)}>
-                    <option value="efectivo">Efectivo</option>
-                    <option value="transferencia">Transferencia</option>
-                  </Select>
-                </div>
-
-                {medio === "efectivo" && (
-                  <div>
-                    <Label>Efectivo recibido</Label>
-                    <Input type="number" value={efectivoRecibido} onChange={(e) => setEfectivoRecibido(Number(e.target.value))} placeholder="50000" />
-                    <div className="mt-2 bg-black text-white rounded-lg p-3 flex justify-between">
-                      <span>Cambio</span><span className="font-black text-[#FF6B00]">{formatCOP(cambio)}</span>
+                {selected.medioPago === "transferencia" && selected.facturaId ? (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm">
+                    <p className="font-bold text-emerald-800">✅ Prepagado por transferencia</p>
+                    <p className="text-xs text-emerald-700">Factura {facturas.find((f) => f.id === selected.facturaId)?.consecutivo || selected.facturaId} ya generada. No volver a cobrar. Al entregar, cierra a pagado.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <Label>Medio de pago *</Label>
+                      <Select value={medio || "efectivo"} onChange={(e) => setMedio(e.target.value as MedioPago)}>
+                        <option value="efectivo">Efectivo</option>
+                        <option value="transferencia">Transferencia</option>
+                      </Select>
                     </div>
-                    {efectivoRecibido > 0 && efectivoRecibido < selected.total && <p className="text-xs text-red-600 mt-1">Falta {formatCOP(selected.total - efectivoRecibido)}</p>}
-                  </div>
-                )}
 
-                {medio === "transferencia" && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
-                    <p className="font-bold">Transferencia Gigi Papas</p>
-                    <p className="text-xs text-zinc-600">Nequi / Bancolombia confirmar comprobante antes de cobrar</p>
-                  </div>
+                    {medio === "efectivo" && (
+                      <div>
+                        <Label>Efectivo recibido</Label>
+                        <Input type="number" value={efectivoRecibido} onChange={(e) => setEfectivoRecibido(Number(e.target.value))} placeholder="50000" />
+                        <div className="mt-2 bg-black text-white rounded-lg p-3 flex justify-between">
+                          <span>Cambio</span><span className="font-black text-[#FF6B00]">{formatCOP(cambio)}</span>
+                        </div>
+                        {efectivoRecibido > 0 && efectivoRecibido < selected.total && <p className="text-xs text-red-600 mt-1">Falta {formatCOP(selected.total - efectivoRecibido)}</p>}
+                      </div>
+                    )}
+
+                    {medio === "transferencia" && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                        <p className="font-bold">Transferencia Gigi Papas</p>
+                        <p className="text-xs text-zinc-600">Nequi / Bancolombia confirmar comprobante antes de cobrar</p>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div className="flex gap-2">
-                  <Button className="flex-1" size="lg" onClick={handleCobrar}>Cobrar {formatCOP(selected.total)}</Button>
+                  {selected.medioPago === "transferencia" && selected.facturaId ? (
+                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" size="lg" onClick={handleCobrar}>Cerrar a pagado (ya prepagado)</Button>
+                  ) : selected.estado === "pendiente" ? (
+                    <>
+                      <Button className="flex-1" size="lg" variant="outline" onClick={handlePrepagoTransferencia}>Confirmar transferencia → a preparación</Button>
+                      <Button className="flex-1" size="lg" onClick={handleCobrar}>Cobrar {formatCOP(selected.total)}</Button>
+                    </>
+                  ) : (
+                    <Button className="flex-1" size="lg" onClick={handleCobrar}>Cobrar {formatCOP(selected.total)}</Button>
+                  )}
                   <Button variant="outline" onClick={handlePrint}>Ticket</Button>
                 </div>
                 <Button variant="ghost" className="w-full" onClick={() => setSelectedId(null)}>Cancelar</Button>
