@@ -1,6 +1,6 @@
 "use client";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore, calcTotal } from "@/lib/store";
 import { formatCOP, uid } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { DetallePedido, EstadoPedido, ESTADOS_COLOR, ESTADOS_LABEL, CategoriaPro
 import { AlertModal } from "@/components/ui/modal";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
+import { QRCodeSVG } from "qrcode.react";
 import { HorarioBanner } from "@/components/horario-banner";
 import { useHorario } from "@/lib/horario";
 import { getDatosTransferencia, TRANSFERENCIA_DEFAULT, type DatosTransferencia } from "@/lib/transferencia";
@@ -28,6 +29,15 @@ export default function MesaPublicPage() {
   const [referencia, setReferencia] = useState("");
   const [datosTransf, setDatosTransf] = useState<DatosTransferencia>(TRANSFERENCIA_DEFAULT);
   useEffect(() => { setDatosTransf(getDatosTransferencia()); }, []);
+  // QR dinámico Nequi (requiere NEXT_PUBLIC_NEQUI_DYNAMIC_QR=1 + credenciales server)
+  const NEQUI_DINAMICO = process.env.NEXT_PUBLIC_NEQUI_DYNAMIC_QR === "1";
+  const [modoManual, setModoManual] = useState(false);
+  const [qrDyn, setQrDyn] = useState<{ qrValue: string; transactionId: string } | null>(null);
+  const [qrEstado, setQrEstado] = useState<"idle" | "generando" | "pendiente" | "aprobado" | "expirado" | "rechazado" | "fallido" | "error">("idle");
+  const [qrError, setQrError] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stopPoll = () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+  useEffect(() => stopPoll, []);
   const mesa = mesas.find((m) => m.numero === idOrNumero || m.id === idOrNumero);
   const pedidosMesa = mesa ? pedidos.filter((p) => p.mesa === mesa.numero || p.mesaId === mesa.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) : [];
   const pedidoActivo = pedidosMesa.find((p) => !["pagado", "cancelado"].includes(p.estado));
@@ -87,8 +97,9 @@ export default function MesaPublicPage() {
     setOk(pedidoId);
   };
 
-  const handlePagarTransferencia = () => {
+  const finalizarPrepago = (notaRef: string) => {
     if (!pedidoActivo || pedidoActivo.estado !== "pendiente") return;
+    stopPoll();
     const consecutivo = `FAC-${String(facturas.length + 1).padStart(6, "0")}`;
     const subtotal = Math.round(pedidoActivo.total / 1.19);
     const ivaIncluido = pedidoActivo.total - subtotal;
@@ -107,7 +118,6 @@ export default function MesaPublicPage() {
       createdAt: new Date().toISOString(),
       impreso: false,
     });
-    const notaRef = referencia.trim() ? ` | Ref transferencia: ${referencia.trim()}` : " | Pagado por transferencia (QR)";
     updatePedido(pedidoActivo.id, {
       estado: "en_preparacion",
       medioPago: "transferencia",
@@ -116,7 +126,60 @@ export default function MesaPublicPage() {
     });
     setShowPago(false);
     setReferencia("");
+    setQrDyn(null);
+    setQrEstado("idle");
+    setModoManual(false);
     setOk(`¡Pago registrado! ${pedidoActivo.id} pasó a preparación.`);
+  };
+
+  const handlePagarTransferencia = () => {
+    const notaRef = referencia.trim() ? ` | Ref transferencia: ${referencia.trim()}` : " | Pagado por transferencia (QR)";
+    finalizarPrepago(notaRef);
+  };
+
+  const generarQRDinamico = async () => {
+    if (!pedidoActivo || pedidoActivo.estado !== "pendiente") return;
+    stopPoll();
+    setQrError(null);
+    setQrEstado("generando");
+    try {
+      const res = await fetch("/api/pagos/nequi/qr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pedidoId: pedidoActivo.id, valor: pedidoActivo.total }),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        if (json.error === "no_configurado") { setModoManual(true); setQrEstado("idle"); return; }
+        throw new Error(json.error || "No se pudo generar el QR");
+      }
+      setQrDyn(json.data);
+      setQrEstado("pendiente");
+      let intentos = 0;
+      pollRef.current = setInterval(async () => {
+        intentos += 1;
+        try {
+          const r = await fetch(`/api/pagos/nequi/estado?qrValue=${encodeURIComponent(json.data.qrValue)}`);
+          const j = await r.json();
+          if (j.ok && j.data?.estado === "aprobado") {
+            finalizarPrepago(` | Nequi QR ${json.data.transactionId}`);
+            return;
+          }
+          if (j.ok && ["expirado", "rechazado", "fallido"].includes(j.data?.estado)) {
+            stopPoll();
+            setQrEstado(j.data.estado);
+            return;
+          }
+        } catch { /* reintenta en el siguiente ciclo */ }
+        if (intentos >= 100) {
+          stopPoll();
+          setQrError("Seguimos esperando confirmación. Si ya pagaste, avisa en caja con tu comprobante.");
+        }
+      }, 5000);
+    } catch (e) {
+      setQrEstado("error");
+      setQrError((e as Error).message || "Error generando el QR");
+    }
   };
 
   if (!mesa) {
@@ -199,12 +262,66 @@ export default function MesaPublicPage() {
               {pedidoActivo.estado === "pendiente" && (
                 <div className="mt-3">
                   {!showPago ? (
-                    <Button className="w-full" variant="outline" onClick={() => setShowPago(true)}>
+                    <Button className="w-full" variant="outline" onClick={() => { setShowPago(true); setModoManual(false); }}>
                       💳 Pagar por transferencia ({formatCOP(pedidoActivo.total)})
                     </Button>
+                  ) : NEQUI_DINAMICO && !modoManual ? (
+                    <div className="bg-white border border-purple-200 rounded-xl p-3 space-y-2 text-center">
+                      <p className="font-bold text-sm">Pagar con Nequi <span className="text-xs font-normal text-zinc-500">QR con valor exacto</span></p>
+                      {qrEstado === "idle" && (
+                        <>
+                          <p className="text-sm font-bold">Total: {formatCOP(pedidoActivo.total)}</p>
+                          <Button className="w-full" onClick={generarQRDinamico}>Generar QR Nequi</Button>
+                          <button className="text-xs text-zinc-500 underline" onClick={() => setModoManual(true)}>Prefiero transferir manual al {datosTransf.nequi}</button>
+                        </>
+                      )}
+                      {qrEstado === "generando" && <p className="text-sm text-zinc-500 py-4">Generando tu QR…</p>}
+                      {qrEstado === "pendiente" && qrDyn && (
+                        <>
+                          <div className="flex justify-center bg-white p-2">
+                            <QRCodeSVG value={qrDyn.qrValue} size={200} level="M" />
+                          </div>
+                          <p className="text-sm font-bold">{formatCOP(pedidoActivo.total)}</p>
+                          <p className="text-xs text-zinc-600">Escanea con tu app Nequi y confirma. Detectamos el pago solo ⏳</p>
+                          {qrError && <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">{qrError}</p>}
+                          <Button variant="ghost" size="sm" onClick={() => { stopPoll(); setQrDyn(null); setQrEstado("idle"); }}>Cancelar</Button>
+                        </>
+                      )}
+                      {(qrEstado === "expirado" || qrEstado === "rechazado" || qrEstado === "fallido") && (
+                        <>
+                          <p className="text-sm font-bold text-red-700">
+                            {qrEstado === "expirado" ? "El QR venció (45 min)." : qrEstado === "rechazado" ? "El pago fue rechazado en Nequi." : "El pago falló."}
+                          </p>
+                          <Button className="w-full" onClick={generarQRDinamico}>Generar otro QR</Button>
+                          <button className="text-xs text-zinc-500 underline" onClick={() => setModoManual(true)}>O transferir manual</button>
+                        </>
+                      )}
+                      {qrEstado === "error" && (
+                        <>
+                          <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-2">{qrError || "Error con Nequi"}</p>
+                          <Button className="w-full" onClick={generarQRDinamico}>Reintentar</Button>
+                          <button className="text-xs text-zinc-500 underline" onClick={() => setModoManual(true)}>O transferir manual al {datosTransf.nequi}</button>
+                        </>
+                      )}
+                      <div className="flex justify-end">
+                        <Button variant="ghost" size="sm" onClick={() => { stopPoll(); setShowPago(false); setQrDyn(null); setQrEstado("idle"); }}>Cerrar</Button>
+                      </div>
+                    </div>
                   ) : (
                     <div className="bg-white border border-blue-200 rounded-xl p-3 space-y-2">
                       <p className="font-bold text-sm">Transferencia {datosTransf.titular}</p>
+                      {datosTransf.qrImage && (
+                        <div className="flex justify-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={datosTransf.qrImage}
+                            alt="QR Nequi Gigi Papas"
+                            className="w-48 h-48 object-contain rounded-xl border bg-white"
+                            onError={(e) => { e.currentTarget.style.display = "none"; }}
+                          />
+                        </div>
+                      )}
+                      <p className="text-xs text-center text-zinc-500">Escanea para pagar {formatCOP(pedidoActivo.total)}</p>
                       <div className="grid sm:grid-cols-2 gap-2 text-sm">
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
                           <p className="text-xs text-zinc-500">Nequi</p>
@@ -225,6 +342,11 @@ export default function MesaPublicPage() {
                         <Button className="flex-1" onClick={handlePagarTransferencia}>Ya pagué, enviar a cocina</Button>
                         <Button variant="ghost" onClick={() => setShowPago(false)}>Cerrar</Button>
                       </div>
+                      {NEQUI_DINAMICO && (
+                        <button className="text-xs text-purple-700 underline w-full text-center" onClick={() => setModoManual(false)}>
+                          Volver al QR Nequi con valor exacto
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
