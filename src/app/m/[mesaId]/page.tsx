@@ -13,7 +13,7 @@ import { formatDate } from "@/lib/utils";
 import { QRCodeSVG } from "qrcode.react";
 import { HorarioBanner } from "@/components/horario-banner";
 import { useHorario } from "@/lib/horario";
-import { getDatosTransferencia, TRANSFERENCIA_DEFAULT, type DatosTransferencia } from "@/lib/transferencia";
+import { useNegocioConfig } from "@/lib/transferencia";
 
 export default function MesaPublicPage() {
   const params = useParams<{ mesaId: string }>();
@@ -27,8 +27,7 @@ export default function MesaPublicPage() {
   const [catActiva, setCatActiva] = useState<string>("todas");
   const [showPago, setShowPago] = useState(false);
   const [referencia, setReferencia] = useState("");
-  const [datosTransf, setDatosTransf] = useState<DatosTransferencia>(TRANSFERENCIA_DEFAULT);
-  useEffect(() => { setDatosTransf(getDatosTransferencia()); }, []);
+  const { datos: datosTransf } = useNegocioConfig();
   // QR dinámico Nequi (requiere NEXT_PUBLIC_NEQUI_DYNAMIC_QR=1 + credenciales server)
   const NEQUI_DINAMICO = process.env.NEXT_PUBLIC_NEQUI_DYNAMIC_QR === "1";
   const [modoManual, setModoManual] = useState(false);

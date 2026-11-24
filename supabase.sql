@@ -62,7 +62,32 @@ create table if not exists facturas (
   impreso boolean default false
 );
 
--- RLS off para MVP (luego activar)
+-- Config compartida del negocio (datos transferencia + QR visibles para todos)
+create table if not exists negocio_config (
+  id text primary key,
+  titular text not null default 'Gigi Papas',
+  nequi text not null default '3023860980',
+  bancolombia text not null default '',
+  mensaje text not null default '',
+  qr_image text not null default '',
+  updated_at timestamptz default now()
+);
+alter table negocio_config disable row level security;
+insert into negocio_config (id) values ('gigi') on conflict (id) do nothing;
+
+-- Bucket público para el QR de Nequi (la app lo sube desde Cuenta admin)
+insert into storage.buckets (id, name, public)
+values ('negocio', 'negocio', true)
+on conflict (id) do update set public = true;
+drop policy if exists "negocio lectura publica" on storage.objects;
+create policy "negocio lectura publica" on storage.objects
+  for select using (bucket_id = 'negocio');
+drop policy if exists "negocio subida anon" on storage.objects;
+create policy "negocio subida anon" on storage.objects
+  for insert with check (bucket_id = 'negocio');
+drop policy if exists "negocio actualiza anon" on storage.objects;
+create policy "negocio actualiza anon" on storage.objects
+  for update using (bucket_id = 'negocio');
 alter table mesas disable row level security;
 alter table productos disable row level security;
 alter table pedidos disable row level security;

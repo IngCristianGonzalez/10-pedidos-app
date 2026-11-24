@@ -8,7 +8,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { AlertModal } from "@/components/ui/modal";
 import { useHorario, DIAS } from "@/lib/horario";
 import { Textarea } from "@/components/ui/input";
-import { getDatosTransferencia, saveDatosTransferencia, TRANSFERENCIA_DEFAULT } from "@/lib/transferencia";
+import { useNegocioConfig, subirQRNegocio } from "@/lib/transferencia";
 
 export default function CuentaPage() {
   const { user, changePassword, is2FAEnabled, get2FASecret, setup2FA, confirm2FA, disable2FA } = useAuth();
@@ -74,8 +74,23 @@ export default function CuentaPage() {
   const [localHorarios, setLocalHorarios] = useState(horario.horarios);
   useEffect(() => { setLocalHorarios(horario.horarios); }, [horario.horarios]);
 
-  const [datosT, setDatosT] = useState(TRANSFERENCIA_DEFAULT);
-  useEffect(() => { setDatosT(getDatosTransferencia()); }, []);
+  const { datos: datosT, setDatos: setDatosT, guardar: guardarNegocio } = useNegocioConfig();
+  const [subiendoQR, setSubiendoQR] = useState(false);
+
+  const handleSubirQR = async (f: File) => {
+    setSubiendoQR(true);
+    try {
+      const url = await subirQRNegocio(f);
+      const next = { ...datosT, qrImage: url };
+      setDatosT(next);
+      await guardarNegocio(next);
+      setMsg({ title: "QR publicado", desc: "La imagen ya quedó visible para todos los clientes que paguen por transferencia." });
+    } catch (e) {
+      setMsg({ title: "No se pudo subir el QR", desc: (e as Error).message || "Intenta de nuevo" });
+    } finally {
+      setSubiendoQR(false);
+    }
+  };
 
   if (!user) return <p className="p-8 text-center">Cargando...</p>;
 
@@ -250,7 +265,7 @@ export default function CuentaPage() {
             </div>
             <div>
               <Label>QR Nequi del negocio</Label>
-              {datosT.qrImage && (
+              {datosT.qrImage ? (
                 <div className="flex justify-center py-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -260,40 +275,30 @@ export default function CuentaPage() {
                     onError={(e) => { e.currentTarget.style.display = "none"; }}
                   />
                 </div>
+              ) : (
+                <p className="text-xs text-center text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 my-1">Sin QR publicado — súbelo aquí y todos los clientes lo verán.</p>
               )}
               <Input
                 type="file"
                 accept="image/*"
+                disabled={subiendoQR}
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (!f) return;
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    const img = new Image();
-                    img.onload = () => {
-                      const max = 640;
-                      const scale = Math.min(1, max / Math.max(img.width, img.height));
-                      const c = document.createElement("canvas");
-                      c.width = Math.round(img.width * scale);
-                      c.height = Math.round(img.height * scale);
-                      c.getContext("2d")?.drawImage(img, 0, 0, c.width, c.height);
-                      setDatosT({ ...datosT, qrImage: c.toDataURL("image/jpeg", 0.85) });
-                    };
-                    img.src = reader.result as string;
-                  };
-                  reader.readAsDataURL(f);
+                  handleSubirQR(f);
+                  e.target.value = "";
                 }}
               />
-              <p className="text-xs text-zinc-400 mt-1">Sube la imagen del QR de Nequi. Se muestra al cliente para escanear y pagar.</p>
-              {datosT.qrImage.startsWith("data:") && (
-                <Button variant="ghost" size="sm" className="mt-1" onClick={() => setDatosT({ ...datosT, qrImage: "/images/nequi-qr.jpeg" })}>Quitar imagen subida (volver a la del repo)</Button>
+              <p className="text-xs text-zinc-400 mt-1">{subiendoQR ? "Subiendo QR…" : "Sube la imagen del QR de Nequi. Se publica al instante para todos los clientes."}</p>
+              {datosT.qrImage && (
+                <Button variant="ghost" size="sm" className="mt-1 text-red-600" onClick={async () => { const next = { ...datosT, qrImage: "" }; setDatosT(next); await guardarNegocio(next); }}>Quitar QR publicado</Button>
               )}
             </div>
             <div>
               <Label>Mensaje al cliente</Label>
               <Textarea value={datosT.mensaje} onChange={(e) => setDatosT({ ...datosT, mensaje: e.target.value })} rows={2} />
             </div>
-            <Button onClick={() => { saveDatosTransferencia(datosT); setMsg({ title: "Datos guardados", desc: "Los clientes verán estos datos al pagar por transferencia." }); }} className="w-full">Guardar datos transferencia</Button>
+            <Button onClick={async () => { await guardarNegocio(datosT); setMsg({ title: "Datos guardados", desc: "Los clientes verán estos datos al pagar por transferencia." }); }} className="w-full">Guardar datos transferencia</Button>
           </CardContent>
         </Card>
       )}

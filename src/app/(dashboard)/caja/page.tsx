@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { formatCOP, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -11,12 +11,11 @@ import { TicketCocinaPrint } from "@/components/print/ticket-cocina";
 import { FacturaPrint } from "@/components/print/factura";
 import { printElement } from "@/lib/print";
 import { AlertModal } from "@/components/ui/modal";
-import { getDatosTransferencia, type DatosTransferencia } from "@/lib/transferencia";
+import { useNegocioConfig } from "@/lib/transferencia";
 
 export default function CajaPage() {
   const { pedidos, updatePedido, ticketsCocina, updateTicketCocina, facturas, addFactura, liberarMesaSiVacia } = useStore();
-  const [datosTransf, setDatosTransf] = useState<DatosTransferencia | null>(null);
-  useEffect(() => { setDatosTransf(getDatosTransferencia()); }, []);
+  const { datos: datosTransf } = useNegocioConfig();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [medio, setMedio] = useState<MedioPago>("efectivo");
   const [efectivoRecibido, setEfectivoRecibido] = useState<number>(0);
